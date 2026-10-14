@@ -708,6 +708,6 @@ document.addEventListener('keydown',event=>{
  productDetailState().quantity=quantities[next];render();document.querySelector(`[data-action="product-quantity"][data-quantity="${quantities[next]}"]`)?.focus();
 },true);
 window.addEventListener('resize',()=>{if(role==='storefront')render();});
-if(!location.hash||location.hash==='#checkout'){role='storefront';page='checkout';}
+if(location.hash==='#checkout'){role='storefront';page='checkout';}
 
 const requestedScenario=(location.search||'').match(/(?:\?|&)scenario=([a-z0-9]+)/);if(requestedScenario&&['vip2','member','vip1','vip3','new','low','downgrade','expiry','sync','storecoupon','rolling'].includes(requestedScenario[1]))scenario=requestedScenario[1];init(scenario);document.getElementById('scenario').value=scenario;if(NAMES[location.hash.slice(1)])page=location.hash.slice(1);render();
