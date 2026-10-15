@@ -246,11 +246,11 @@ overview=function(){
 };
 rewards=function(){return originalRewards()+`<div class="future-entries"><button data-phase1="false" aria-disabled="true">已验证商品评价 <small>二期</small></button><button data-phase1="false" aria-disabled="true">推荐好友 <small>二期</small></button><button data-phase1="false" aria-disabled="true">门店双倍积分日 <small>二期</small></button><button data-phase1="false" aria-disabled="true">VIP 活动 <small>二期</small></button></div>`;};
 points=function(){
- const names={all:'全部',pending:'待入账',earned:'获得',redeem:'兑换扣减',refund:'退款扣回',expired:'已过期',returned:'退回'},records=state.ledger.filter(l=>filter==='all'||l.category===filter),pending=(filter==='all'||filter==='pending')?state.pending:[];
- return gate(`${head('POINTS ACTIVITY','积分明细','查看积分获得、冻结、扣减、扣回、到期和退回记录。')}<div class="row between"><div><span class="small muted">可用积分</span><h2 class="num">${number(state.points)}</h2></div><div style="text-align:right"><span class="small muted">待入账积分</span><h2 class="num">${number(state.pending.reduce((a,b)=>a+b.amount,0))}</h2></div></div><div class="tabs" role="tablist" aria-label="积分状态">${Object.entries(names).map(([id,label])=>`<button role="tab" aria-selected="${filter===id}" class="${filter===id?'active':''}" data-action="points-filter" data-id="${id}">${label}</button>`).join('')}</div>${pending.map(p=>`<div class="ledger"><div><strong>${p.name}</strong><p class="small muted">${money(p.net)} × ${p.rate} · ${p.due===null?'待发货 / 提货，尚未开始等待期':date(p.due)+' 转为可用'}</p><button class="link small" data-action="pending-detail" data-id="${p.id}">查看记录</button></div><div><strong class="num">+${number(p.amount)}</strong><p class="small muted">冻结中</p></div></div>`).join('')}${filter!=='pending'?records.map(l=>`<div class="ledger"><div><strong>${l.label}</strong><p class="small muted">${l.channel} · ${date(l.day)} · ${names[l.category]||'状态变更'}</p><button class="link small" data-action="transaction-detail" data-id="${l.id}">查看流水详情</button></div><div class="change num ${l.amount<0?'negative':''}">${l.amount>0?'+':''}${number(l.amount)}</div></div>`).join(''):''}${!records.length&&!pending.length?'<div class="empty"><h3>暂无该类记录</h3></div>':''}<section class="point-batches"><h3>可用积分批次</h3>${state.lots.filter(l=>l.amount>0).sort((a,b)=>a.expires-b.expires).map(l=>`<div class="row between"><span>${date(l.expires)} 到期</span><strong class="num">${number(l.amount)} 分</strong></div>`).join('')||'<p class="small muted">暂无可用批次。</p>'}</section><div class="notice">兑换按先到期先扣除。退款依据原订单金额及原倍率，累计扣回不超过原始积分；负余额进入人工核对。各积分批次分别记录到期日，可在上方查看。</div>`);
+ const names={all:'全部',earned:'获得',redeem:'兑换扣减',expired:'已过期',other:'其他'},records=state.ledger.filter(l=>filter==='all'||(filter==='other'?!['earned','redeem','expired'].includes(l.category):l.category===filter)),pending=(filter==='all'||filter==='other')?state.pending:[];
+ return gate(`${head('POINTS ACTIVITY','积分明细','查看积分获得、冻结、扣减、扣回、到期和退回记录。')}<div class="row between"><div><span class="small muted">可用积分</span><h2 class="num">${number(state.points)}</h2></div><div style="text-align:right"><span class="small muted">待入账积分</span><h2 class="num">${number(state.pending.reduce((a,b)=>a+b.amount,0))}</h2></div></div><div class="tabs" role="tablist" aria-label="积分状态">${Object.entries(names).map(([id,label])=>`<button role="tab" aria-selected="${filter===id}" class="${filter===id?'active':''}" data-action="points-filter" data-id="${id}">${label}</button>`).join('')}</div>${pending.map(p=>`<div class="ledger"><div><strong>${p.name}</strong><p class="small muted">${money(p.net)} × ${p.rate} · ${p.due===null?'待发货 / 提货，尚未开始等待期':date(p.due)+' 转为可用'}</p><button class="link small" data-action="pending-detail" data-id="${p.id}">查看记录</button></div><div><strong class="num">+${number(p.amount)}</strong><p class="small muted">冻结中</p></div></div>`).join('')}${filter!=='pending'?records.map(l=>`<div class="ledger"><div><strong>${l.label}</strong><p class="small muted">${l.channel} · ${date(l.day)} · ${names[l.category]||'其他'}</p><button class="link small" data-action="transaction-detail" data-id="${l.id}">查看流水详情</button></div><div class="change num ${l.amount<0?'negative':''}">${l.amount>0?'+':''}${number(l.amount)}</div></div>`).join(''):''}${!records.length&&!pending.length?'<div class="empty"><h3>暂无该类记录</h3></div>':''}<section class="point-batches"><h3>可用积分批次</h3>${state.lots.filter(l=>l.amount>0).sort((a,b)=>a.expires-b.expires).map(l=>`<div class="row between"><span>${date(l.expires)} 到期</span><strong class="num">${number(l.amount)} 分</strong></div>`).join('')||'<p class="small muted">暂无可用批次。</p>'}</section><div class="notice">兑换按先到期先扣除。退款依据原订单金额及原倍率，累计扣回不超过原始积分；负余额进入人工核对。各积分批次分别记录到期日，可在上方查看。</div>`);
 };
 settings=function(){return originalSettings()+`<section class="panel" style="margin-top:20px"><h3>同意与通知管理</h3><p class="small muted" style="margin:12px 0">会员计划：${state.joined?'已加入':'未加入'} · 邮箱验证：${state.consent.emailVerified?'已验证':'未验证'} · ${state.consent.memberVersion}<br>会员计划同意与营销订阅分别记录。</p><label class="check"><input id="marketing-consent-input" type="checkbox" ${state.marketing?'checked':''}><span>接收邮件资讯与优惠（可选）</span></label><p class="small muted">营销触达仅在此项同意后执行；本原型只预览通知。</p>${state.exitRequest?'<div class="notice">退出申请已提交，待客服核对未用积分和权益。最终退出规则确认前不会自动清空。</div>':''}</section>`;};
-function transactionDetail(id){const l=state.ledger.find(l=>l.id===id);if(!l)return;modal('积分流水详情',`<div class="detail"><strong>${esc(l.label)}</strong><br>变更：${l.amount>0?'+':''}${l.amount} 分<br>余额：${l.before===null?'历史演示记录':number(l.before)+' → '+number(l.after)}<br>流水号：${l.id}<br>会员：${l.customer}<br>来源订单 / 权益：${l.reference||'会员账户事件'}<br>时间：${date(l.day)}<br>渠道：${l.channel}<br>操作人：${l.actor}<br>规则版本：${l.version}</div><p class="small muted">原订单与原始流水用于退款、核销防重复和跨渠道对账。</p>`,[{text:'关闭',action:'close'}]);}
+function transactionDetail(id){const l=state.ledger.find(l=>l.id===id);if(!l)return;modal('积分流水详情',`<div class="detail">积分流水名称：<strong>${esc(l.label)}</strong><br>变更：${l.amount>0?'+':''}${number(l.amount)} 分<br>来源订单/权益：${esc(l.reference||'会员账户事件')}<br>时间：${date(l.day)}<br>渠道：${esc(l.channel)}</div>`,[{text:'关闭',action:'close'}]);}
 function applyScopeGuards(){
  const stage=document.getElementById('stage');
  for(const a of stage.querySelectorAll('a[href]')){a.removeAttribute('href');a.removeAttribute('target');a.dataset.phase1='false';a.setAttribute('aria-disabled','true');}
@@ -567,7 +567,7 @@ function productBundleHTML(quantity){
 }
 function productDetailPage(){
  const detail=productDetailState(),result=productDetailResult(),unit=productDetailResult(1),canAdd=state.qty+detail.quantity<=24;
- return `<main class="product-detail-page" id="main-content"><nav class="product-breadcrumb" aria-label="商品导航"><button class="link" data-action="cart-back-collection">首页</button><span>›</span><span>长袖上衣</span><span>›</span><span>${HOODIE_PRODUCT.name}</span></nav><div class="product-detail-layout"><section class="product-gallery" aria-label="白色连帽衫商品图片">${HOODIE_PRODUCT.images.map((src,index)=>`<img src="${src}" alt="白色莫代尔混纺长袖连帽衫${['正面','背面','细节','近景'][index]}" ${index>1?'loading="lazy"':''}>`).join('')}</section><section class="product-purchase-panel"><p class="product-fabric-label">LENZING™ Modal</p><h1>${HOODIE_PRODUCT.name}</h1><p class="product-english-name">${HOODIE_PRODUCT.englishName}</p><div class="product-price-review"><div class="product-main-price"><strong class="num">${money(unit.chosen.total)}</strong>${unit.chosen.total<unit.subtotal?`<del>${money(unit.subtotal)}</del>`:''}</div><span class="product-review" aria-label="评分 5 分，25 条评论">★★★★★ <small>25 条评论</small></span></div><div class="product-member-status"><span>${state.joined?`${result.t.name} 会员基础折扣 · ${round(result.t.base*100)}%`:'加入会员，享等级折扣与消费积分'}</span>${state.joined?'<button class="link" data-action="product-member-rules">查看规则</button>':'<button class="link" data-action="product-join">加入会员</button>'}</div><div class="product-options"><div class="product-color-heading"><strong>主色调：</strong><span>白色</span></div><span class="product-white-swatch" aria-label="已选白色"></span><div class="product-size-heading"><strong>尺码：${detail.size}</strong><button class="link" data-action="product-size-guide">尺码指南</button></div><div class="product-sizes" aria-label="选择尺码">${HOODIE_PRODUCT.sizes.map(size=>`<button data-action="product-size" data-id="${size}" class="${detail.size===size?'selected':''}" aria-pressed="${detail.size===size}">${size}</button>`).join('')}</div></div><div class="product-bundle-section"><h2>买越多，省越多</h2><div class="product-bundles" role="radiogroup" aria-label="选择购买件数">${[1,3,6,12].map(productBundleHTML).join('')}</div></div><div class="product-payable" aria-live="polite"><span>所选商品应付小计 · ${detail.quantity} 件</span><strong class="num">${money(result.chosen.total)}</strong></div><button class="btn product-add-to-cart" data-action="product-add-cart" ${canAdd?'':'disabled'}>添加到购物车</button>${canAdd?'':'<p class="product-limit-message">当前购物车最多容纳 24 件，请先调整购物车数量。</p>'}<section class="product-points-banner" aria-live="polite"><div><span>${state.joined?'预计可得积分':'加入会员后预计可得积分'}</span><strong class="num">${number(result.points)} 积分</strong></div><p>${number(Math.floor(result.chosen.total))} × ${result.t.rate} = ${number(result.points)} 积分</p><small>按当前所选商品单独结算估算，最终金额与积分以结账页为准。<br>发货后 30 天可用；不含税费、运费与礼品卡金额。</small></section><div class="product-information"><details><summary>商品特点</summary><p>柔软轻盈的莫代尔混纺面料，四向弹力；长袖连帽剪裁，侧开叉下摆。</p></details><details><summary>面料与护理</summary><p>42% 莫代尔、49% 聚酯纤维、9% 氨纶。冷水轻柔机洗，与相近颜色衣物同洗；勿漂白。</p></details><details><summary>配送与退货</summary><p>美国本土现货订单购买 3 件及以上可享标准免邮；配送升级服务可在结账页兑换使用。具体配送与退货条件以官网政策为准。</p><button class="link" data-action="product-source">查看官网商品与政策</button></details></div></section></div></main>`;
+ return `<main class="product-detail-page" id="main-content"><nav class="product-breadcrumb" aria-label="商品导航"><button class="link" data-action="cart-back-collection">首页</button><span>›</span><span>长袖上衣</span><span>›</span><span>${HOODIE_PRODUCT.name}</span></nav><div class="product-detail-layout"><section class="product-gallery" aria-label="白色连帽衫商品图片">${HOODIE_PRODUCT.images.map((src,index)=>`<img src="${src}" alt="白色莫代尔混纺长袖连帽衫${['正面','背面','细节','近景'][index]}" ${index>1?'loading="lazy"':''}>`).join('')}</section><section class="product-purchase-panel"><p class="product-fabric-label">LENZING™ Modal</p><h1>${HOODIE_PRODUCT.name}</h1><p class="product-english-name">${HOODIE_PRODUCT.englishName}</p><div class="product-price-review"><div class="product-main-price"><strong class="num">${money(unit.chosen.total)}</strong>${unit.chosen.total<unit.subtotal?`<del>${money(unit.subtotal)}</del>`:''}</div><span class="product-review" aria-label="评分 5 分，25 条评论">★★★★★ <small>25 条评论</small></span></div><div class="product-options"><div class="product-color-heading"><strong>主色调：</strong><span>白色</span></div><span class="product-white-swatch" aria-label="已选白色"></span><div class="product-size-heading"><strong>尺码：${detail.size}</strong><button class="link" data-action="product-size-guide">尺码指南</button></div><div class="product-sizes" aria-label="选择尺码">${HOODIE_PRODUCT.sizes.map(size=>`<button data-action="product-size" data-id="${size}" class="${detail.size===size?'selected':''}" aria-pressed="${detail.size===size}">${size}</button>`).join('')}</div></div><div class="product-bundle-section"><h2>买越多，省越多</h2><div class="product-bundles" role="radiogroup" aria-label="选择购买件数">${[1,3,6,12].map(productBundleHTML).join('')}</div></div><div class="product-payable" aria-live="polite"><span>所选商品应付小计 · ${detail.quantity} 件</span><strong class="num">${money(result.chosen.total)}</strong></div><button class="btn product-add-to-cart" data-action="product-add-cart" ${canAdd?'':'disabled'}>添加到购物车</button>${canAdd?'':'<p class="product-limit-message">当前购物车最多容纳 24 件，请先调整购物车数量。</p>'}<section class="product-points-banner" aria-live="polite"><div><span>${state.joined?'预计可得积分':'加入会员后预计可得积分'}</span><strong class="num">${number(result.points)} 积分</strong></div><p>${number(Math.floor(result.chosen.total))} × ${result.t.rate} = ${number(result.points)} 积分</p><small>按当前所选商品单独结算估算，最终金额与积分以结账页为准。<br>发货后 30 天可用；不含税费、运费与礼品卡金额。</small></section><div class="product-information"><details><summary>商品特点</summary><p>柔软轻盈的莫代尔混纺面料，四向弹力；长袖连帽剪裁，侧开叉下摆。</p></details><details><summary>面料与护理</summary><p>42% 莫代尔、49% 聚酯纤维、9% 氨纶。冷水轻柔机洗，与相近颜色衣物同洗；勿漂白。</p></details><details><summary>配送与退货</summary><p>美国本土现货订单购买 3 件及以上可享标准免邮；配送升级服务可在结账页兑换使用。具体配送与退货条件以官网政策为准。</p><button class="link" data-action="product-source">查看官网商品与政策</button></details></div></section></div></main>`;
 }
 function productDetailOpen(){role='storefront';page='checkout';cartView='product';cartOpen=false;render();document.getElementById('stage')?.scrollIntoView({block:'start'});}
 function productAddToCart(){
@@ -709,5 +709,146 @@ document.addEventListener('keydown',event=>{
 },true);
 window.addEventListener('resize',()=>{if(role==='storefront')render();});
 if(location.hash==='#checkout'){role='storefront';page='checkout';}
+
+// Registration, email sign-in and editable account profile.
+Object.assign(NAMES,{auth:'注册 / 登录',signup:'注册',login:'登录',settings:'Profile · 轮廓'});
+const demoAccounts=new Map();
+let authFlow=null,profileEditing=null,authDrafts={signup:{},login:{}};
+const authBaseInit=init;
+init=function(which='vip2'){
+ authBaseInit(which);state.accountLoggedIn=state.joined;
+ state.accountProfile={firstName:state.joined?'Alex':'',lastName:state.joined?'Morgan':'',nickname:'',birthday:'',country:'US',phone:state.joined?'2135550104':'',addresses:[]};
+ authFlow=null;profileEditing=null;authDrafts={signup:{},login:{}};
+};
+function accountProfile(){return state.accountProfile||(state.accountProfile={firstName:'',lastName:'',nickname:'',birthday:'',country:'US',phone:'',addresses:[]});}
+function rememberAccount(){if(state.accountLoggedIn&&state.email)demoAccounts.set(state.email.toLowerCase(),JSON.parse(JSON.stringify(state)));}
+const PHONE_COUNTRIES={US:{label:'🇺🇸 +1',code:'+1',length:10},CA:{label:'🇨🇦 +1',code:'+1',length:10},CN:{label:'🇨🇳 +86',code:'+86',length:11},GB:{label:'🇬🇧 +44',code:'+44',length:10},AU:{label:'🇦🇺 +61',code:'+61',length:9}};
+function authField(id,label,value='',extra=''){return `<label class="auth-field" for="${id}"><span>${label}</span><input id="${id}" value="${esc(value)}" ${extra}></label>`;}
+function birthdayFields(prefix,value=''){
+ const [year='',month='',day='']=value.split('-');
+ return `<fieldset class="birthday-fields"><legend>Birthday <span>生日（选填）</span></legend><div>${authField(prefix+'-month','MM',month,'inputmode="numeric" maxlength="2" autocomplete="bday-month"')}${authField(prefix+'-day','DD',day,'inputmode="numeric" maxlength="2" autocomplete="bday-day"')}${authField(prefix+'-year','YYYY',year,'inputmode="numeric" maxlength="4" autocomplete="bday-year"')}</div><p id="${prefix}-birthday-error" class="field-error" role="alert"></p></fieldset>`;
+}
+function phoneFields(prefix,country='US',phone=''){
+ return `<div class="auth-phone"><label class="auth-country"><span class="sr-only">国家 / 地区代码</span><select id="${prefix}-country">${Object.entries(PHONE_COUNTRIES).map(([key,c])=>`<option value="${key}" ${key===country?'selected':''}>${c.label}</option>`).join('')}</select></label>${authField(prefix+'-phone',prefix==='signup'?'Phone 手机号码（必填）':'Phone 电话（选填）',phone,`type="tel" autocomplete="tel-national" ${prefix==='signup'?'required':''}`)}</div><p id="${prefix}-phone-error" class="field-error" role="alert"></p>`;
+}
+function authSurface(){
+ if(!authFlow)authFlow={view:'login',step:'form',draft:{}};const mode=authFlow.view;
+ const f=authFlow,d=f.draft,signup=mode==='signup';
+ const header=cartPreviousShell('').split('<main class="store-main"')[0].replace(/<div class="store-announcement">[\s\S]*?<\/div>/,'');
+ let content;
+ if(f.step==='verify')content=`<h1>Check your email</h1><p class="auth-intro">验证邮箱，${signup?'完成注册':'登录账户'}</p><p class="auth-sent">验证码发送效果：<strong>${esc(d.email)}</strong></p><form id="auth-verify-form" novalidate>${authField('auth-code','6 位验证码','','inputmode="numeric" autocomplete="one-time-code" maxlength="6" required autofocus')}<p id="auth-code-error" class="field-error" role="alert"></p><button class="auth-submit" type="submit">${signup?'Verify & sign up · 验证并注册':'Sign in · 登录'}</button></form><p class="auth-demo">原型演示验证码：<strong>246810</strong>，不会发送邮件。</p><div class="auth-secondary"><button class="link" data-action="auth-back">修改邮箱</button><button class="link" data-action="auth-resend">重新获取验证码</button></div>`;
+ else if(signup)content=`<h1>Member Signup</h1><p class="auth-intro">Complete the form to sign up.</p><form id="auth-signup-form" novalidate>${authField('signup-first','First name 名（选填）',d.firstName||'','autocomplete="given-name" maxlength="40"')}${authField('signup-last','Last name 姓（选填）',d.lastName||'','autocomplete="family-name" maxlength="40"')}${birthdayFields('signup',d.birthday||'')}${phoneFields('signup',d.country||'US',d.phone||'')}${authField('signup-email','Email 邮箱（必填）',d.email||'','type="email" autocomplete="email" required')}<div class="auth-consent"><label><input id="signup-consent" type="checkbox" required ${d.consent?'checked':''}><span>我已阅读并同意 <button type="button" class="link" data-action="terms">会员计划条款</button>、<button type="button" class="link" data-action="notice">财务激励通知</button>，自愿加入会员计划（必选）。</span></label><label><input id="signup-marketing" type="checkbox" ${d.marketing?'checked':''}><span>接收 FIOBOC 邮件资讯与优惠（选填）</span></label></div><p id="auth-form-error" class="field-error" role="alert"></p><button class="auth-submit" type="submit">Submit · 提交</button></form><p class="auth-switch">Already have an account? <button class="link" data-action="auth-open" data-id="login">Sign in · 登录</button></p>`;
+ else content=`<h1>Sign in</h1><p class="auth-intro">Enter your email to receive a verification code.</p><form id="auth-login-form" novalidate>${authField('login-email','Email 邮箱',d.email||'','type="email" autocomplete="email" required')}<p id="auth-form-error" class="field-error" role="alert"></p><button class="auth-submit" type="submit">Continue · 继续</button></form><p class="auth-switch">New to FIOBOC? <button class="link" data-action="auth-open" data-id="signup">Create an account · 注册</button></p><p class="auth-demo">可使用演示账户 alex@example.com，或本次演示中已注册的邮箱。</p>`;
+ return `<div class="auth-surface">${header}<main id="main-content" class="auth-main ${signup?'auth-signup':'auth-login'}"><div class="auth-mode-tabs" role="tablist" aria-label="注册或登录">${[['login','登录'],['signup','注册']].map(([id,label])=>`<button id="auth-tab-${id}" role="tab" aria-controls="auth-panel" aria-selected="${mode===id}" tabindex="${mode===id?'0':'-1'}" class="${mode===id?'selected':''}" data-action="auth-mode" data-id="${id}">${label}</button>`).join('')}</div><section id="auth-panel" role="tabpanel" aria-labelledby="auth-tab-${mode}">${content}</section></main>${accountFooter()}</div>`;
+}
+const profileBaseShell=nativeAccountShell;
+nativeAccountShell=function(content){
+ if(page!=='settings')return profileBaseShell(content);
+ return `${accountHeader()}<div class="account-layout profile-layout"><nav class="account-nav" aria-label="主导航"><button data-action="page" data-id="overview">会员中心</button><a data-phase1="false" aria-disabled="true">订单</a><a data-phase1="false" aria-disabled="true">评价您的购买</a><button class="selected" aria-current="page" data-action="page" data-id="settings">轮廓</button></nav><main id="main-content" class="account-main profile-main">${content}</main></div>${accountFooter()}`;
+};
+settings=function(){
+ const p=accountProfile(),phone=p.phone?`${PHONE_COUNTRIES[p.country].code} ${p.phone}`:'未填写';
+ const basic=profileEditing==='basic'?`<form id="profile-basic-form" novalidate>${authField('profile-nickname','Nickname 昵称',p.nickname,'maxlength="30" autocomplete="nickname" placeholder="填写你的昵称"')}${birthdayFields('profile',p.birthday)}<p class="profile-hint">昵称最多 30 个字符；生日可留空。</p><p id="profile-basic-error" class="field-error" role="alert"></p><div class="profile-form-actions"><button type="button" class="profile-button" data-action="profile-cancel">取消</button><button class="profile-button primary" type="submit">保存</button></div></form>`:`<dl class="profile-data"><div><dt>昵称</dt><dd>${p.nickname?esc(p.nickname):'<span class="muted">未填写</span>'}</dd></div><div><dt>生日</dt><dd>${p.birthday?esc(p.birthday.replaceAll('-',' / ')):'<span class="muted">未填写</span>'}</dd></div></dl>`;
+ const contact=profileEditing==='contact'?`<form id="profile-contact-form" novalidate>${authField('profile-email','电子邮件',state.email,'type="email" readonly')}<p class="profile-hint">此邮箱用于登录。</p>${phoneFields('contact',p.country,p.phone)}<p id="profile-contact-error" class="field-error" role="alert"></p><div class="profile-form-actions"><button type="button" class="profile-button" data-action="profile-cancel">取消</button><button type="submit" class="profile-button primary">保存</button></div></form>`:`<dl class="profile-data"><div><dt>电子邮件</dt><dd>${esc(state.email)}</dd></div><div><dt>电话号码</dt><dd>${esc(phone)}</dd></div></dl>`;
+ return `<div class="profile-page"><section class="profile-section"><div class="profile-heading"><h2>个人资料</h2>${profileEditing==='basic'?'':`<button class="profile-button" data-action="profile-edit" data-id="basic">${p.nickname||p.birthday?'编辑':'填写'}</button>`}</div><div class="profile-card">${basic}</div></section><section class="profile-section"><div class="profile-heading"><h2>联系方式</h2>${profileEditing==='contact'?'':'<button class="profile-button" data-action="profile-edit" data-id="contact">编辑</button>'}</div><div class="profile-card">${contact}</div></section><section class="profile-section"><div class="profile-heading"><h2>地址</h2><button class="profile-button" data-action="profile-address">添加</button></div><div class="profile-card profile-address">${p.addresses.length?p.addresses.map(a=>`<div><span aria-hidden="true">⌖</span><p>${esc(a)}</p></div>`).join(''):'<div><span aria-hidden="true">⌖</span><p>未添加地址</p></div>'}</div></section><section class="profile-section"><div class="profile-heading"><h2>营销偏好</h2></div><div class="profile-card profile-marketing"><span>✉ &nbsp; 电子邮件</span><button class="profile-switch ${state.marketing?'on':''}" role="switch" aria-label="订阅电子邮件营销" aria-checked="${!!state.marketing}" data-action="profile-marketing"><span>${state.marketing?'✓':''}</span></button></div></section><div class="profile-signout"><button class="profile-button" data-action="auth-signout">Sign out</button><button class="link" data-action="auth-signout">Sign out of all devices</button></div><details class="profile-membership"><summary>会员计划管理</summary>${originalSettings()}</details></div>`;
+};
+const profileBaseGuards=applyScopeGuards;
+applyScopeGuards=function(){
+ profileBaseGuards();
+ for(const el of document.querySelectorAll('.profile-link,.account-nav button[data-id="settings"]')){delete el.dataset.phase1;el.removeAttribute('aria-disabled');}
+};
+const authBaseRender=render;
+render=function(){
+ if(role==='customer'&&page==='join'&&!state.joined&&!state.accountLoggedIn)page='signup';
+ if(role==='customer'&&['signup','login'].includes(page)){if(!authFlow||authFlow.view!==page)authFlow={view:page,step:'form',draft:authDrafts[page]||{}};page='auth';}
+ if(role==='customer'&&!state.accountLoggedIn&&page!=='auth'){authFlow={view:'login',step:'form',draft:authDrafts.login};page='auth';}
+ if(role==='customer'&&page==='auth'){
+  const stage=document.getElementById('stage');stage.className='stage'+(device==='mobile'?' mobile':'');stage.innerHTML=authSurface();applyScopeGuards();
+  document.querySelectorAll('.reviewnav button').forEach(el=>{const selected=el.dataset.action==='auth-open';el.classList.toggle('active',selected);el.setAttribute('aria-pressed',String(selected));});return;
+ }
+ authBaseRender();
+ document.querySelectorAll('.reviewnav [data-action="auth-open"]').forEach(el=>{el.classList.remove('active');el.setAttribute('aria-pressed','false');});
+};
+function captureAuthDraft(){
+ if(!authFlow)return;
+ if(document.getElementById('auth-signup-form')){
+  const month=fieldValue('signup-month'),day=fieldValue('signup-day'),year=fieldValue('signup-year');
+  authFlow.draft={firstName:fieldValue('signup-first'),lastName:fieldValue('signup-last'),email:fieldValue('signup-email'),birthday:month||day||year?`${year}-${month}-${day}`:'',country:fieldValue('signup-country'),phone:fieldValue('signup-phone'),consent:document.getElementById('signup-consent').checked,marketing:document.getElementById('signup-marketing').checked};
+ }else if(document.getElementById('auth-login-form'))authFlow.draft={email:fieldValue('login-email')};
+ authDrafts[authFlow.view]={...authFlow.draft};
+}
+function authOpen(view){
+ rememberAccount();captureAuthDraft();const mode=['signup','login'].includes(view)?view:authFlow?.view||'login';
+ authFlow={view:mode,step:'form',draft:{...authDrafts[mode]}};profileEditing=null;role='customer';page='auth';closeModal();render();
+}
+function fieldValue(id){return document.getElementById(id)?.value.trim()||'';}
+function fieldError(id,message){const el=document.getElementById(id);if(el)el.textContent=message;}
+function readBirthday(prefix){
+ const month=fieldValue(prefix+'-month'),day=fieldValue(prefix+'-day'),year=fieldValue(prefix+'-year');
+ if(!month&&!day&&!year)return {value:''};
+ if(!/^\d{1,2}$/.test(month)||!/^\d{1,2}$/.test(day)||!/^\d{4}$/.test(year))return {error:'请完整填写生日的月、日、年。'};
+ const value=`${year}-${month.padStart(2,'0')}-${day.padStart(2,'0')}`,dateValue=new Date(value+'T00:00:00Z');
+ if(Number(year)<1900||!Number.isFinite(dateValue.getTime())||dateValue.toISOString().slice(0,10)!==value||value>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'}))return {error:'请输入有效的生日，且不能晚于今天。'};
+ return {value};
+}
+function readPhone(prefix){const country=fieldValue(prefix+'-country'),raw=fieldValue(prefix+'-phone'),phone=raw.replace(/[\s()\-]/g,'');if(prefix==='signup'&&!raw)return {error:'请填写手机号码。'};if(raw&&(!/^\d+$/.test(phone)||phone.length!==PHONE_COUNTRIES[country].length))return {error:`请输入有效的电话号码（${PHONE_COUNTRIES[country].length} 位，不含国家代码）。`};return {country,phone};}
+function completeAuth(){
+ const f=authFlow,email=f.draft.email.toLowerCase();
+ if(f.view==='login'){
+  if(state.email.toLowerCase()!==email||!state.joined){const saved=demoAccounts.get(email);if(saved)state=JSON.parse(JSON.stringify(saved));else if(email==='alex@example.com')init('vip2');else return fieldError('auth-code-error','未找到该账户，请先注册。');}
+  state.accountLoggedIn=true;role='customer';page='overview';authFlow=null;render();toast('登录成功。');return;
+ }
+ if(demoAccounts.has(email))return fieldError('auth-code-error','此邮箱已注册，请返回登录。');
+ const d=f.draft;init('new');state.email=email;state.joined=!!d.consent;state.accountLoggedIn=true;state.accountProfile={firstName:d.firstName,lastName:d.lastName,nickname:'',birthday:d.birthday,country:d.country,phone:d.phone,addresses:[]};state.name=[d.firstName,d.lastName].filter(Boolean).join(' ')||'FIOBOC 顾客';state.memberId='FIO-DEMO-'+String(demoAccounts.size+1).padStart(4,'0');state.marketing=!!d.marketing;state.consent={...state.consent,member:state.joined,emailVerified:true,marketing:state.marketing,day:today()};
+ if(state.joined&&!state.bonus){grantPoints(100);log('首次验证并加入会员',100);state.bonus=true;}
+ rememberAccount();role='customer';page='settings';render();toast(state.joined?'注册成功，100 积分已到账。可继续填写昵称。':'账户注册成功，可继续填写昵称和生日。');
+}
+document.addEventListener('click',event=>{
+ const el=event.target.closest('button');if(!el||el.disabled)return;const a=el.dataset.action;
+ if(el.dataset.role==='customer'&&['auth','signup','login','settings'].includes(page)){event.preventDefault();event.stopImmediatePropagation();role='customer';page=state.accountLoggedIn?'overview':'login';render();return;}
+ if(a==='account-home'){event.preventDefault();event.stopImmediatePropagation();role='customer';page=state.accountLoggedIn?'overview':'login';render();return;}
+ if(!['auth-mode','auth-open','auth-back','auth-resend','auth-signout','profile-edit','profile-cancel','profile-marketing','profile-address'].includes(a))return;
+ event.preventDefault();event.stopImmediatePropagation();
+ if(a==='auth-open'||a==='auth-mode')authOpen(el.dataset.id);
+ else if(a==='auth-back'){authFlow.step='form';render();}
+ else if(a==='auth-resend'){toast('演示验证码：246810；不会发送真实邮件。');}
+ else if(a==='auth-signout'){rememberAccount();state.accountLoggedIn=false;authOpen('login');toast('已退出当前演示账户。');}
+ else if(a==='profile-edit'){profileEditing=el.dataset.id;render();document.getElementById(profileEditing==='basic'?'profile-nickname':'contact-phone')?.focus();}
+ else if(a==='profile-cancel'){profileEditing=null;render();}
+ else if(a==='profile-marketing'){state.marketing=!state.marketing;state.consent.marketing=state.marketing;rememberAccount();render();toast(state.marketing?'已开启邮件订阅。':'已取消邮件订阅。');}
+ else if(a==='profile-address')modal('添加地址','<form id="profile-address-form"><label class="auth-field"><span>完整地址</span><input id="profile-address-input" autocomplete="street-address" maxlength="240" required></label><p id="profile-address-error" class="field-error" role="alert"></p><button class="auth-submit" type="submit">保存地址</button></form>',[]);
+},true);
+document.addEventListener('submit',event=>{
+ const id=event.target.id;if(!['auth-signup-form','auth-login-form','auth-verify-form','profile-basic-form','profile-contact-form','profile-address-form'].includes(id))return;
+ event.preventDefault();event.stopImmediatePropagation();
+ if(id==='auth-signup-form'){
+  const birthday=readBirthday('signup'),phone=readPhone('signup'),email=fieldValue('signup-email');
+  const d={firstName:fieldValue('signup-first'),lastName:fieldValue('signup-last'),email,birthday:birthday.value||'',country:phone.country||fieldValue('signup-country'),phone:phone.phone||fieldValue('signup-phone'),consent:document.getElementById('signup-consent').checked,marketing:document.getElementById('signup-marketing').checked};authFlow.draft=d;
+  fieldError('auth-form-error','');fieldError('signup-birthday-error',birthday.error||'');fieldError('signup-phone-error',phone.error||'');
+  for(const key of ['first','last','email'])document.getElementById('signup-'+key).removeAttribute('aria-invalid');
+  if(birthday.error||phone.error){document.getElementById(birthday.error?'signup-month':'signup-phone').setAttribute('aria-invalid','true');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){fieldError('auth-form-error','请输入有效的邮箱地址。');document.getElementById('signup-email').setAttribute('aria-invalid','true');return;}
+  rememberAccount();if(demoAccounts.has(email.toLowerCase()))return fieldError('auth-form-error','此邮箱已注册，请使用 Sign in 登录。');
+  if(!d.consent)return fieldError('auth-form-error','请阅读并勾选同意加入会员计划。');
+  authFlow.step='verify';render();
+ }else if(id==='auth-login-form'){
+  const email=fieldValue('login-email');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return fieldError('auth-form-error','请输入有效的邮箱地址。');
+  rememberAccount();if(email.toLowerCase()!=='alex@example.com'&&!demoAccounts.has(email.toLowerCase())&&!(state.joined&&state.email.toLowerCase()===email.toLowerCase()))return fieldError('auth-form-error','未找到该账户，请先注册。');
+  authFlow.draft={email};authFlow.step='verify';render();
+ }else if(id==='auth-verify-form'){if(fieldValue('auth-code')!=='246810')return fieldError('auth-code-error','验证码错误，请重新输入。');completeAuth();}
+ else if(id==='profile-basic-form'){
+  const nickname=fieldValue('profile-nickname'),birthday=readBirthday('profile');fieldError('profile-birthday-error',birthday.error||'');if(birthday.error)return;if(nickname.length>30)return fieldError('profile-basic-error','昵称不能超过 30 个字符。');
+  const p=accountProfile();p.nickname=nickname;p.birthday=birthday.value;state.name=nickname||[p.firstName,p.lastName].filter(Boolean).join(' ')||'Fioboc Member';profileEditing=null;rememberAccount();render();toast('个人资料已保存。');
+ }else if(id==='profile-contact-form'){
+  const phone=readPhone('contact');fieldError('contact-phone-error',phone.error||'');if(phone.error)return;Object.assign(accountProfile(),phone);profileEditing=null;rememberAccount();render();toast('联系方式已保存。');
+ }else if(id==='profile-address-form'){const value=fieldValue('profile-address-input');if(!value)return fieldError('profile-address-error','请填写地址。');accountProfile().addresses.push(value);rememberAccount();closeModal();render();toast('地址已添加。');}
+},true);
+
+document.addEventListener('input',event=>{if(event.target.closest('#auth-signup-form,#auth-login-form'))captureAuthDraft();});
+document.addEventListener('change',event=>{if(event.target.closest('#auth-signup-form,#auth-login-form'))captureAuthDraft();});
+document.addEventListener('keydown',event=>{
+ const tab=event.target.closest('[data-action="auth-mode"]');if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+ event.preventDefault();const mode=event.key==='Home'?'login':event.key==='End'?'signup':tab.dataset.id==='login'?'signup':'login';authOpen(mode);document.getElementById('auth-tab-'+mode)?.focus();
+});
 
 const requestedScenario=(location.search||'').match(/(?:\?|&)scenario=([a-z0-9]+)/);if(requestedScenario&&['vip2','member','vip1','vip3','new','low','downgrade','expiry','sync','storecoupon','rolling'].includes(requestedScenario[1]))scenario=requestedScenario[1];init(scenario);document.getElementById('scenario').value=scenario;if(NAMES[location.hash.slice(1)])page=location.hash.slice(1);render();
