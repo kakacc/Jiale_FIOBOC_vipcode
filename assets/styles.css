@@ -348,3 +348,44 @@ h1,h2{font-size:20px;font-weight:700;line-height:24px;letter-spacing:0}h3{font-s
 
 /* Final discounts combine membership and quantity discounts sequentially. */
 .guide-tier-table .guide-discount-heading th{width:auto;background:#f8f7f4;color:#777;font-size:12px;font-weight:400;line-height:1.7;text-align:left;padding:12px 16px}
+
+/* Personal information and points share one member summary card. */
+.overview-member-summary .overview-points{border-top:1px solid #e2e2e2;margin-top:19px;padding-top:19px}.overview-points-body{display:flex;align-items:center;justify-content:space-between;gap:28px;margin-top:18px}.overview-member-summary .point-columns{border:0;margin:0;padding:0;flex:1}.overview-member-summary .account-point-actions{margin:0;flex-shrink:0;gap:20px}.overview-member-summary .account-point-actions .link{margin-left:0;white-space:nowrap}
+@media(max-width:700px){.overview-points-body{display:block;margin-top:18px}.overview-member-summary .account-point-actions{margin-top:18px;justify-content:space-between;gap:12px}.overview-member-summary .overview-points{margin-top:17px;padding-top:17px}}
+.mobile .overview-points-body{display:block;margin-top:18px}.mobile .overview-member-summary .account-point-actions{margin-top:18px;justify-content:space-between;gap:12px}.mobile .overview-member-summary .overview-points{margin-top:17px;padding-top:17px}
+
+/* Owned rewards can be filtered directly in the member overview. */
+.overview-owned-rewards .tabs{margin:0 0 22px}.overview-owned-rewards [role="tabpanel"]{min-width:0}
+
+/* Keep prototype page navigation centered in the scenario toolbar. */
+.tools{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px 18px}
+.tools>.row:first-child{min-width:0}
+.tools>.row:last-child{justify-self:end;gap:10px;white-space:nowrap}
+.tools .reviewnav{width:auto;min-width:0;justify-content:center;flex-wrap:nowrap;gap:3px}
+.tools .reviewnav button{border:0;border-radius:4px;padding:8px 11px;background:transparent;color:#666;white-space:nowrap}
+.tools .reviewnav button.active{background:#e8e8e8;color:#000}
+@media(max-width:1250px){.tools{grid-template-columns:minmax(0,1fr) auto}.tools .reviewnav{grid-column:1/-1;grid-row:2}.tools>.row:last-child{grid-column:2;grid-row:1}}
+@media(max-width:600px){.tools{grid-template-columns:minmax(0,1fr)}.tools>.row:first-child{justify-content:center}.tools .reviewnav{grid-column:1;grid-row:2;flex-wrap:wrap}.tools>.row:last-child{grid-column:1;grid-row:3;justify-self:center}}
+
+/* Review annotations are off by default and sit outside the customer interface. */
+.review-changes-toggle{flex-shrink:0;border:1px solid #c9c9c9;border-radius:5px;background:#fff;color:#333;font-size:12px;padding:7px 13px;white-space:nowrap}
+.review-changes-toggle:hover{border-color:#bb362e;color:#a42d25}
+.review-changes-toggle[aria-pressed="true"]{background:#b83229;border-color:#b83229;color:#fff}
+.review-changes-summary{background:#fff8f6;border-bottom:1px solid #efd3cd;padding:12px 24px;display:grid;gap:9px;color:#672f29;font:12px/1.6 Arial,"PingFang SC","Microsoft YaHei",sans-serif}
+.review-changes-summary[hidden],#review-changes-layer[hidden]{display:none!important}
+.review-changes-heading{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.review-changes-heading strong{font-size:13px;color:#a42d25}
+.review-changes-heading strong:before{content:"";display:inline-block;width:10px;height:10px;border:2px solid #d74135;border-radius:2px;margin-right:7px;vertical-align:-1px}
+.review-changes-heading span{color:#8b5c54}
+.review-changes-links{display:flex;flex-wrap:wrap;gap:7px}
+.review-changes-links button{background:#fff;border:1px solid #ebc5bd;color:#853b31;border-radius:4px;padding:4px 10px;font:inherit;text-align:left}
+.review-changes-links button:hover,.review-changes-links button.is-selected{border-color:#b83229;background:#fbe7e2;color:#8b201a}
+#review-changes-note{margin:0;color:#865c53;max-width:1100px}
+#review-changes-layer{position:absolute;left:0;top:0;width:100%;height:0;z-index:100;pointer-events:none}
+.review-change-frame{position:absolute;border:2px solid #d74135;border-radius:5px;box-shadow:0 0 0 2px #ffffffa6;pointer-events:none}
+.review-change-label{position:absolute;top:-5px;left:7px;transform:translateY(-100%);display:block;max-width:calc(100% - 14px);border:2px solid #fff;border-radius:5px;padding:3px 8px;background:#c5342b;color:#fff;font:600 11px/1.45 Arial,"PingFang SC","Microsoft YaHei",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 1px 4px #00000012}
+.review-change-frame.is-focused{border-width:3px;box-shadow:0 0 0 4px #d7413520}
+.review-change-frame.is-focused .review-change-label{background:#95271e}
+@media(max-width:700px){.review-changes-toggle{font-size:11px;padding:6px 10px}.review-changes-summary{padding:12px 16px}.review-changes-heading{gap:8px}.review-changes-links button{padding:4px 8px}.review-change-label{font-size:10px;padding:3px 5px}}
+@media print{.review-changes-toggle,.review-changes-summary,#review-changes-layer{display:none!important}}
+.presentation .review-changes-toggle,.presentation .review-changes-summary,.presentation #review-changes-layer{display:none!important}
