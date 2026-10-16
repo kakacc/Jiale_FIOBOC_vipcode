@@ -389,3 +389,14 @@ h1,h2{font-size:20px;font-weight:700;line-height:24px;letter-spacing:0}h3{font-s
 @media(max-width:700px){.review-changes-toggle{font-size:11px;padding:6px 10px}.review-changes-summary{padding:12px 16px}.review-changes-heading{gap:8px}.review-changes-links button{padding:4px 8px}.review-change-label{font-size:10px;padding:3px 5px}}
 @media print{.review-changes-toggle,.review-changes-summary,#review-changes-layer{display:none!important}}
 .presentation .review-changes-toggle,.presentation .review-changes-summary,.presentation #review-changes-layer{display:none!important}
+
+/* Coupon details show the redemption code without a barcode. */
+.coupon-code-frame{background:#fff;border:1px solid #dfdfdf;border-radius:12px;padding:24px 16px;text-align:center;margin:20px 0}.coupon-code-frame .wallet-code{display:inline-block;padding:9px 14px;margin-bottom:12px}
+
+/* Identify coupon and service codes directly on owned-reward cards. */
+.wallet-card-code{display:flex;align-items:center;justify-content:space-between;gap:12px}.wallet-card-code .wallet-code-value{min-width:0;overflow-wrap:anywhere}.wallet-card-code .wallet-code-label{flex-shrink:0;color:#777;font:400 11px/1.5 Arial,"PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:0;white-space:nowrap}
+
+/* Net spend uses the same rolling period as the current member tier. */
+.overview-identity .identity-spend{display:flex;align-items:baseline;gap:6px 10px;flex-wrap:wrap;margin-top:8px;font-size:13px;line-height:1.6;color:#777}.overview-identity .identity-spend strong{font-size:14px;font-weight:600;color:#222;white-space:nowrap}
+@media(max-width:700px){.overview-identity .identity-spend{font-size:12px}.overview-identity .identity-spend strong{font-size:13px}}
+.mobile .overview-identity .identity-spend{font-size:12px}.mobile .overview-identity .identity-spend strong{font-size:13px}
