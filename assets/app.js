@@ -21,33 +21,15 @@ modal=function(title,content,buttons=[]){publicBaseModal(title,content,buttons.f
 const TIERS=[{name:'Member',min:0,base:0,rate:1,response:'48 小时'},{name:'VIP1',min:150,base:.03,rate:1.1,response:'12 工作小时'},{name:'VIP2',min:500,base:.05,rate:1.2,response:'8 工作小时'},{name:'VIP3',min:1500,base:.1,rate:1.3,response:'4 工作小时'}];
 const REWARDS=[{id:'c5',name:'$5 优惠券',cost:500,value:5,min:100,type:'coupon'},{id:'c10',name:'$10 优惠券',cost:1000,value:10,min:200,type:'coupon'},{id:'c20',name:'$20 优惠券',cost:2000,value:20,min:400,type:'coupon'},{id:'c30',name:'$30 优惠券',cost:3000,value:30,min:600,type:'coupon'},{id:'ship',name:'美国配送升级',cost:400,type:'shipping'},{id:'return',name:'美国免费退货权益',cost:500,type:'return'}];
 
-// Historical points convert once into one account-bound online coupon.
-const LEGACY_LOYALTY_REWARD_ID='legacy-loyalty';
-function ensureLegacyLoyaltyCoupon(){
- const points=Number(state.shopifyLoyaltyPoints);
- if(!Number.isSafeInteger(points)||points<=0||state.legacyLoyaltyConverted)return;
- if(!state.wallet.some(w=>w.reward===LEGACY_LOYALTY_REWARD_ID)){
-  state.wallet.unshift({id:'w-legacy-'+state.memberId,reward:LEGACY_LOYALTY_REWARD_ID,value:points/100,status:'available',created:today(),expires:null,customer:state.memberId,code:'FIO-ONLINE-'+state.memberId.replace(/^FIO-/,''),source:'legacy-loyalty'});
- }
- state.legacyLoyaltyConverted=true;
-}
-function rewardById(id){
- if(id!==LEGACY_LOYALTY_REWARD_ID)return REWARDS.find(r=>r.id===id);
- const wallet=state.wallet.find(w=>w.reward===id);
- return wallet?{id,name:money(wallet.value)+' 线上无门槛优惠券',type:'coupon',value:wallet.value,min:0,cost:0,onlineOnly:true,autoIssued:true}:undefined;
-}
+// Historical loyalty points are displayed independently, without conversion.
+function rewardById(id){return REWARDS.find(r=>r.id===id);}
 function couponRewardById(id){const reward=rewardById(id);return reward?.type==='coupon'?reward:undefined;}
-function rewardExpired(wallet){return wallet.reward===LEGACY_LOYALTY_REWARD_ID?false:today()-wallet.created>=30;}
-function cartCouponRewards(){const legacy=rewardById(LEGACY_LOYALTY_REWARD_ID);return [...REWARDS.filter(r=>r.type==='coupon'),...(legacy?[legacy]:[])];}
-function applyOnlineLegacyCoupon(){
- const code=checkoutFields().discountCode.trim().toUpperCase();
- const wallet=state.wallet.find(w=>w.reward===LEGACY_LOYALTY_REWARD_ID&&w.code.toUpperCase()===code);
- if(!wallet)return toast('该优惠码或礼品卡不可用，请检查后重试。');
- const error=couponValidity(wallet,false);if(error)return toast(error);
- const row=cartCouponModel().rows.find(row=>row.reward.id===wallet.reward);
- if(!row?.eligible)return toast(row?.reasons.join('；')||'当前订单不可使用该优惠券。');
- state.coupon=wallet.reward;state.selectedCouponWalletId=wallet.id;
- checkoutFields().discountCode=wallet.code;render();toast('优惠券已应用，付款成功后核销。');
+function rewardExpired(wallet){return today()-wallet.created>=30;}
+function cartCouponRewards(){return REWARDS.filter(r=>r.type==='coupon');}
+function legacyLoyaltySummary(){
+ const points=Number(state.shopifyLoyaltyPoints);
+ if(!Number.isFinite(points)||points<=0)return '';
+ return `<p class="identity-metric identity-loyalty"><span class="identity-loyalty-label">忠诚度积分<span class="identity-loyalty-note">（原作为商店抵扣额使用的积分）</span></span><strong class="num">${number(points)}</strong></p>`;
 }
 
 const NAMES={overview:'会员总览',rewards:'兑换权益',wallet:'我的权益',points:'积分明细',tiers:'等级与权益',checkout:'购物车与结账',join:'加入会员',settings:'账户与计划'};
@@ -158,7 +140,7 @@ function accountRules(){return `<section class="account-card"><h2>会员与积�
 function overview(){
  if(!state.joined)return `<section class="account-card">${join()}</section>`;
  const t=tier();
- return `${state.sync?'<div class="notice error" role="alert">会员积分同步失败，以下为最近一次同步数据。兑换与会员订单暂不可用。<button class="link" style="margin-left:10px" data-action="retry-sync">重新同步</button></div>':''}${state.points<0?'<div class="notice error" role="alert">退款后积分余额为负，当前不可兑换。客服将核对原订单与历史兑换记录。</div>':''}<section class="account-card overview-identity overview-member-summary"><div class="account-identity"><div class="account-avatar" aria-label="顾客">${esc(state.name.charAt(0))}</div><div class="identity-text"><div class="row"><h2>${esc(state.name)}</h2><span class="pill">${t.name}</span></div><p class="identity-benefits"><span>${t.base?`${round(t.base*100)}% 会员基础折扣`:'基础满件折扣'}</span><span>客服首次响应 ${t.response}</span></p><p class="identity-metric identity-spend"><span>近 12 个月累计净消费</span><strong class="num">${money(state.spend)}</strong></p></div><div class="identity-actions"><button class="link" data-action="member-card">会员凭证</button><button class="link" data-action="page" data-id="tiers">等级权益</button></div></div><div class="overview-points"><h2>会员积分</h2><p>官网与线下门店共用同一积分余额</p><div class="overview-points-body"><div class="point-columns"><div><span class="label">可用积分</span><strong class="num" id="balance">${number(state.points)}<span class="unit">分</span></strong><p>每消费 $1 获得 ${t.rate} 分</p></div></div><div class="account-point-actions"><button class="btn" data-action="page" data-id="rewards" ${state.sync||state.points<0?'disabled':''}>兑换积分</button><button class="link" data-action="page" data-id="points">查看积分明细</button></div></div></div></section><section class="account-card overview-owned-rewards" id="overview-owned-rewards" tabindex="-1">${overviewOwnedRewards()}</section>${accountRules()}`;}
+ return `${state.sync?'<div class="notice error" role="alert">会员积分同步失败，以下为最近一次同步数据。兑换与会员订单暂不可用。<button class="link" style="margin-left:10px" data-action="retry-sync">重新同步</button></div>':''}${state.points<0?'<div class="notice error" role="alert">退款后积分余额为负，当前不可兑换。客服将核对原订单与历史兑换记录。</div>':''}<section class="account-card overview-identity overview-member-summary"><div class="account-identity"><div class="account-avatar" aria-label="顾客">${esc(state.name.charAt(0))}</div><div class="identity-text"><div class="row"><h2>${esc(state.name)}</h2><span class="pill">${t.name}</span></div><p class="identity-benefits"><span>${t.base?`${round(t.base*100)}% 会员基础折扣`:'基础满件折扣'}</span><span>客服首次响应 ${t.response}</span></p><p class="identity-metric identity-spend"><span>近 12 个月累计净消费</span><strong class="num">${money(state.spend)}</strong></p>${legacyLoyaltySummary()}</div><div class="identity-actions"><button class="link" data-action="member-card">会员凭证</button><button class="link" data-action="page" data-id="tiers">等级权益</button></div></div><div class="overview-points"><h2>会员积分</h2><p>官网与线下门店共用同一积分余额</p><div class="overview-points-body"><div class="point-columns"><div><span class="label">可用积分</span><strong class="num" id="balance">${number(state.points)}<span class="unit">分</span></strong><p>每消费 $1 获得 ${t.rate} 分</p></div></div><div class="account-point-actions"><button class="btn" data-action="page" data-id="rewards" ${state.sync||state.points<0?'disabled':''}>兑换积分</button><button class="link" data-action="page" data-id="points">查看积分明细</button></div></div></div></section><section class="account-card overview-owned-rewards" id="overview-owned-rewards" tabindex="-1">${overviewOwnedRewards()}</section>${accountRules()}`;}
 
 function rewardCard(r){const available=state.joined&&!state.sync&&state.points>=r.cost;return `<article class="reward"><div class="rewardbody"><span class="reward-summary">${r.type==='coupon'?`$${r.value}`:r.type==='shipping'?'配送升级':'免费退货'}</span><h3>${r.name}</h3><p>${r.type==='coupon'?`满 $${r.min} 可用 · 官网 / LA 门店<br>兑换后 30 天有效 · 单次券`:r.type==='shipping'?'美国本土 48 州现货线上订单<br>标准配送升级一级，结账时使用':'美国线上合规订单<br>兑换后联系客服核单并签发标签'}</p><div class="row between"><span class="cost">${number(r.cost)} <small>积分</small></span><button class="btn small secondary" data-action="redeem" data-id="${r.id}" ${state.joined&&!available?'disabled':''}>${!state.joined?'加入后兑换':state.sync?'稍后重试':available?'兑换':`差 ${number(r.cost-state.points)} 分`}</button></div></div></article>`;}
 function nativeStorefrontShell(content){const icons={search:'<circle cx="10.8" cy="10.8" r="7.5"/><path d="m16.5 16.5 5 5"/>',user:'<circle cx="12" cy="7.5" r="4"/><path d="M3.5 22v-3c0-6 17-6 17 0v3z"/>',heart:'<path d="M12 21 3.3 12.4C-3.5 5.6 7.4-2 12 6c4.6-8 15.5-.4 8.7 6.4z"/>',cart:'<path d="M1 2h3l3 13h13l2-10H5"/><circle cx="9" cy="20" r="1.3"/><circle cx="19" cy="20" r="1.3"/>'};return `<div class="store-announcement">FREE SHIPPING ON 3 ITEMS+ & EASY RETURNS.<span class="region">🇺🇸 &nbsp;|&nbsp; English ⌄</span></div><header class="store-header"><a href="https://www.fioboc.com/" target="_blank" rel="noopener">${nativeLogo('store-logo')}</a><nav class="store-nav" aria-label="Primary"><a href="https://www.fioboc.com/collections/new-in" target="_blank" rel="noopener">NEW ARRIVAL</a><a href="https://www.fioboc.com/collections/mens-collection" target="_blank" rel="noopener">MEN</a><a href="https://www.fioboc.com/collections/women" target="_blank" rel="noopener">WOMEN</a><a href="https://www.fioboc.com/collections/best-selling-products" target="_blank" rel="noopener">BEST SELLERS</a><a class="sale" href="https://www.fioboc.com/collections/sale" target="_blank" rel="noopener">SALE</a><a href="https://www.fioboc.com/pages/fit-guide" target="_blank" rel="noopener">FIT GUIDE</a><button data-action="rewards-guide-open">REWARDS</button></nav><div class="store-icons"><button class="store-search" data-action="store-search" aria-label="Search"><svg viewBox="0 0 24 24" aria-hidden="true">${icons.search}</svg></button><button data-action="account-home" aria-label="Account"><svg viewBox="0 0 24 24" aria-hidden="true">${icons.user}</svg></button><button class="store-wishlist" data-action="store-wishlist" aria-label="Wishlist"><svg viewBox="0 0 24 24" aria-hidden="true">${icons.heart}</svg></button><button data-action="store-cart" aria-label="Cart"><svg viewBox="0 0 24 24" aria-hidden="true">${icons.cart}</svg></button></div></header><main class="store-main" id="main-content">${content}</main><footer class="store-footer"><div class="store-footer-head"><div><h3>CUSTOMER CARE</h3><a href="https://www.fioboc.com/pages/contact-us" target="_blank" rel="noopener">Contact Us</a><a href="https://www.fioboc.com/pages/new-returns-exchanges" target="_blank" rel="noopener">Returns & Exchanges</a></div><div><h3>COMPANY</h3><a href="https://www.fioboc.com/pages/fioboc-our-story" target="_blank" rel="noopener">Our Story</a><button class="store-return-link" data-action="account-home">Membership</button></div><div><h3>HELP</h3><a href="https://www.fioboc.com/pages/shipping-delivery" target="_blank" rel="noopener">Shipping & Delivery</a><a href="https://www.fioboc.com/pages/privacy-policy" target="_blank" rel="noopener">Privacy Policies</a></div></div><small>© 2026 Fioboc. Powered by Shopify.</small></footer>`;}
@@ -217,37 +199,15 @@ function couponValidity(w,amount=true){
  if(w.status==='canceled')return '优惠券已撤销，不能核销。';
  if(w.status!=='available')return '优惠券当前不可用。';
  const r=rewardById(w.reward);if(!r||r.type!=='coupon')return '这不是商品优惠券，请核对权益类型。';
- if(r.onlineOnly&&role==='pos')return '仅限官网可用（线下门店不可用）。';
  const res=calculate({spend:state.spend,quantity:state.qty,price:role==='pos'?56:cartUnitPrice(),promo:state.promo,first:state.first,coupon:r});
  if(amount&&res.base<r.min)return `本单会员基础折扣后商品金额 ${money(res.base)}，未满 ${money(r.min)}。`;
  if(amount&&res.chosen.id!=='coupon')return `本单 ${res.chosen.name} 更优惠（${money(res.chosen.total)}）。保留这张券，本次不核销。`;
  return null;
 }
 function couponDetail(id){
- const w=state.wallet.find(w=>w.id===id),r=w&&rewardById(w.reward);if(!w||!r||r.type!=='coupon')return;
- const active=w.status==='available'&&!rewardExpired(w),labels={available:'可用',used:'已使用',expired:'已过期',canceled:'已撤销'};
- const buttons=[{text:'关闭',action:'close',secondary:true}];
- if(active&&r.onlineOnly)buttons.push({text:'复制券码',action:'coupon-copy',id:w.id});
- modal(r.name+' · 优惠券详情',`<div class="coupon-detail"><div class="row between"><span>${esc(state.name)} · ${tier().name}</span><span class="pill">${labels[w.status]||w.status}</span></div>${r.onlineOnly?`<div class="coupon-threshold"><strong>无门槛减 ${money(r.value)}</strong></div>`:''}${active?`<div class="coupon-code-frame"><strong class="wallet-code">${esc(w.code)}</strong><p class="coupon-hint">${r.onlineOnly?'官网结账时输入此券码进行核销。':'线下买单时请提供当前券码给店员核销'}</p></div>`:`<div class="detail"><strong>${esc(w.code)}</strong><p>此券已${w.status==='used'?'使用':w.status==='expired'?'过期':'撤销'}，不能再次核销。</p></div>`}${rewardUseLimitDetails(r)}${w.order?`<div class="detail">核销订单：${esc(w.order)}<br>渠道：${esc(w.usedChannel||'官网')}<br>操作人：${esc(w.usedActor||'系统')}<br>核销方式：${esc(w.usedMethod||'线上结账')}</div>`:''}</div>`,buttons);
-}
-
-async function copyCouponCode(id,button){
- const w=state.wallet.find(w=>w.id===id);
- if(!w||w.status!=='available'||rewardExpired(w)||!rewardById(w.reward)?.onlineOnly){toast('当前优惠券不可用。');return false;}
- let copied=false;
- try{if(globalThis.navigator?.clipboard?.writeText){await navigator.clipboard.writeText(w.code);copied=true;}}catch{}
- if(!copied){
-  const field=document.createElement('textarea'),previouslyFocused=document.activeElement;
-  field.value=w.code;field.readOnly=true;field.tabIndex=-1;
-  Object.assign(field.style,{position:'fixed',left:'-9999px',top:'0'});
-  try{
-   (document.querySelector('.modal')||document.body).appendChild(field);
-   field.focus({preventScroll:true});field.select();field.setSelectionRange(0,field.value.length);
-   copied=typeof document.execCommand==='function'&&document.execCommand('copy');
-  }catch{}finally{field.remove();(button||previouslyFocused)?.focus({preventScroll:true});}
- }
- toast(copied?'券码已复制。':'复制未成功，请选中券码手动复制。');
- return copied;
+ const w=state.wallet.find(w=>w.id===id),r=w&&REWARDS.find(r=>r.id===w.reward);if(!w||!r||r.type!=='coupon')return;
+ const active=w.status==='available'&&today()-w.created<30,labels={available:'可用',used:'已使用',expired:'已过期',canceled:'已撤销'};
+ modal(r.name+' · 优惠券详情',`<div class="coupon-detail"><div class="row between"><span>${esc(state.name)} · ${tier().name}</span><span class="pill">${labels[w.status]||w.status}</span></div>${active?`<div class="coupon-code-frame"><strong class="wallet-code">${esc(w.code)}</strong><p class="coupon-hint">线下买单时请提供当前券码给店员核销</p></div>`:`<div class="detail"><strong>${esc(w.code)}</strong><p>此券已${w.status==='used'?'使用':w.status==='expired'?'过期':'撤销'}，不能再次核销。</p></div>`}${rewardUseLimitDetails(r)}${w.order?`<div class="detail">核销订单：${esc(w.order)}<br>渠道：${esc(w.usedChannel||'官网')}<br>操作人：${esc(w.usedActor||'系统')}<br>核销方式：${esc(w.usedMethod||'线上结账')}</div>`:''}</div>`,[{text:'关闭',action:'close',secondary:true}]);
 }
 function overviewOwnedRewards(){
  const selected=['all','available','used'].includes(filter)?filter:'all';
@@ -257,7 +217,7 @@ function overviewOwnedRewards(){
 
 function ownedRewardsCards(cards){
  const labels={available:'可用',reserved:'已绑定订单',label_issued:'标签已签发 / 待首扫',consumed:'已使用',used:'已使用',expired:'已过期',canceled:'已关闭 / 已退分'};
- return cards.length?`<div class="wallet-grid">${cards.map(w=>{const r=rewardById(w.reward),usable=w.status==='available'&&!rewardExpired(w);return `<article class="wallet"><div class="row between"><h3>${r.name}</h3><span class="pill">${labels[w.status]}</span></div><p class="small muted">${r.onlineOnly?'无门槛 · 仅限官网使用':r.type==='coupon'?`满 $${r.min} · ${date(w.created+30)} 到期`:`${r.type==='shipping'?'配送升级服务':'联系客服使用'} · ${date(w.created+30)} 到期`}</p><div class="wallet-code wallet-card-code"><span class="wallet-code-value">${esc(w.code)}</span><span class="wallet-code-label">${r.type==='coupon'?'优惠券码':'服务券码'}</span></div>${w.order?`<p class="small muted">${esc(w.order)} · ${esc(w.usedChannel||'服务订单')}</p>`:''}<div class="row wrap" style="gap:18px;margin-top:14px">${r.type==='coupon'?`<button class="link small" data-action="coupon-detail" data-id="${w.id}">查看券详情</button>`:usable&&r.type!=='shipping'?`<button class="link small" data-action="wallet-use" data-id="${w.id}">${r.type==='return'?'申请使用':'结账使用'}</button>`:''}</div></article>`;}).join('')}</div>`:`<div class="empty"><h3>暂无已兑换权益</h3><p>兑换后，可在这里查看已兑换的优惠券及服务。</p><button class="btn" data-action="page" data-id="rewards">去兑换权益</button></div>`;
+ return cards.length?`<div class="wallet-grid">${cards.map(w=>{const r=rewardById(w.reward),usable=w.status==='available'&&!rewardExpired(w);return `<article class="wallet"><div class="row between"><h3>${r.name}</h3><span class="pill">${labels[w.status]}</span></div><p class="small muted">${r.type==='coupon'?`满 $${r.min} · ${date(w.created+30)} 到期`:`${r.type==='shipping'?'配送升级服务':'联系客服使用'} · ${date(w.created+30)} 到期`}</p><div class="wallet-code wallet-card-code"><span class="wallet-code-value">${esc(w.code)}</span><span class="wallet-code-label">${r.type==='coupon'?'优惠券码':'服务券码'}</span></div>${w.order?`<p class="small muted">${esc(w.order)} · ${esc(w.usedChannel||'服务订单')}</p>`:''}<div class="row wrap" style="gap:18px;margin-top:14px">${r.type==='coupon'?`<button class="link small" data-action="coupon-detail" data-id="${w.id}">查看券详情</button>`:usable&&r.type!=='shipping'?`<button class="link small" data-action="wallet-use" data-id="${w.id}">${r.type==='return'?'申请使用':'结账使用'}</button>`:''}</div></article>`;}).join('')}</div>`:`<div class="empty"><h3>暂无已兑换权益</h3><p>兑换后，可在这里查看已兑换的优惠券及服务。</p><button class="btn" data-action="page" data-id="rewards">去兑换权益</button></div>`;
 }
 wallet=function(){
  const cards=state.wallet.filter(w=>filter==='all'||(filter==='available'?w.status==='available':['used','expired','canceled','consumed'].includes(w.status)));
@@ -303,7 +263,7 @@ placeOrder=function(){
 advance=function(){const previous=tier().name;originalAdvance();state.spend=spendInWindow();tierChanged(previous);render();};
 overview=function(){
  let html=originalOverview();if(!state.joined)return html;
- const next=TIERS[tierIndex(state.spend)+1],coupons=activeWallet().filter(w=>rewardById(w.reward).type==='coupon'&&w.reward!==LEGACY_LOYALTY_REWARD_ID&&w.created+30-today()<=7),alerts=[];
+ const next=TIERS[tierIndex(state.spend)+1],coupons=activeWallet().filter(w=>rewardById(w.reward).type==='coupon'&&w.created+30-today()<=7),alerts=[];
  if(coupons.length)alerts.push(`<div class="notice"><strong>${coupons.length} 张优惠券即将到期</strong><p>可在线上使用，或到店出示条形码 / 券码。<button class="link" data-action="page" data-id="wallet">查看优惠券</button></p></div>`);
  if(next&&next.min-state.spend<=50)alerts.push(`<div class="notice"><strong>距离 ${next.name} 还差 ${money(next.min-state.spend)}</strong><p>官网与门店净商品消费合并计算。<button class="link" data-action="page" data-id="tiers">查看升级权益</button></p></div>`);
  return (alerts.length?`<div class="business-alerts">${alerts.join('')}</div>`:'')+html;
@@ -320,13 +280,12 @@ function applyScopeGuards(){
  for(const a of stage.querySelectorAll('a[href]')){a.removeAttribute('href');a.removeAttribute('target');a.dataset.phase1='false';a.setAttribute('aria-disabled','true');}
  for(const e of stage.querySelectorAll('.account-header a,.store-header a,.account-nav a,.profile-link,.account-nav button[data-id="settings"],[data-action="country-menu"],[data-action="store-search"],[data-action="store-wishlist"]')){e.dataset.phase1='false';e.setAttribute('aria-disabled','true');}
 }
-const NEW_ACTIONS=['coupon-detail','coupon-copy','pos-coupon-method','pos-coupon-apply','pos-coupon-clear','pos-scan-demo','payment-failed','transaction-detail','pending-detail','operations-view','ops-tab','issue-seed','issue-detail','issue-verify','issue-resolve-sync','coupon-failure-demo','cancel-order-open','cancel-order-confirm','run-reconciliation','touch-preview','exit-confirm','refund-confirm','retry-sync','restore-return'];
+const NEW_ACTIONS=['coupon-detail','pos-coupon-method','pos-coupon-apply','pos-coupon-clear','pos-scan-demo','payment-failed','transaction-detail','pending-detail','operations-view','ops-tab','issue-seed','issue-detail','issue-verify','issue-resolve-sync','coupon-failure-demo','cancel-order-open','cancel-order-confirm','run-reconciliation','touch-preview','exit-confirm','refund-confirm','retry-sync','restore-return'];
 document.addEventListener('click',event=>{
  const el=event.target.closest('button,a');if(!el)return;
  if(el.dataset.phase1==='false'){event.preventDefault();event.stopImmediatePropagation();return;}
  const a=el.dataset.action,id=el.dataset.id;if(!NEW_ACTIONS.includes(a))return;event.preventDefault();event.stopImmediatePropagation();if(el.disabled)return;
  if(a==='coupon-detail')couponDetail(id);
- else if(a==='coupon-copy')void copyCouponCode(id,el);
  else if(a==='pos-coupon-method'){state.posCouponMethod=id;state.posCouponMessage='';render();if(id!=='direct')document.getElementById('pos-coupon-code')?.focus();}
  else if(a==='pos-coupon-apply')applyPOSCoupon(state.wallet.find(w=>w.id===id),'店员直接选择');
  else if(a==='pos-coupon-clear'){state.coupon=null;state.selectedCouponWalletId=null;state.posCouponMessage='已移除此券，未核销，仍可使用。';render();}
@@ -363,7 +322,6 @@ document.addEventListener('change',event=>{
 document.addEventListener('submit',event=>{if(event.target.id==='verify-form'&&state.joined){state.marketing=!!event.joinMarketingChoice;state.consent.emailVerified=true;state.consent.member=true;state.consent.marketing=state.marketing;state.consent.day=today();}});
 
 function render(){
- ensureLegacyLoyaltyCoupon();
  if(!PUBLIC_ROLES.includes(role))role='customer';
  if(!NAMES[page])page='overview';
  if(role==='storefront'||page==='checkout'){role='storefront';page='checkout';}
@@ -390,7 +348,6 @@ function couponThresholdHTML(r){return `<div class="coupon-threshold"><strong>�
 function rewardDescription(r){return r.type==='shipping'?'标准配送升1级，线上结账时可用':r.type==='return'?'兑换后联系客服使用':'';}
 function couponRedemptionFinality(){return '兑换后不可撤销';}
 function rewardUseConditions(r){
- if(r.onlineOnly)return ['仅限官网可用（线下门店不可用）。','仅可与会员基础折扣同用，不与满件、首单、普通优惠码、达人码或临时促销叠加。','每笔订单限用1张优惠券。'];
  if(r.type==='coupon')return [`订单消费需满$${r.min}。`,'兑换后30天内有效，过期积分不可退回。',`仅限线下 ${COUPON_STORE.name} 门店可用。门店地址：${COUPON_STORE.address}。`,'仅可与会员基础折扣同用，不与满件、首单、普通优惠码、达人码或临时促销叠加。','每笔订单限用1张优惠券。',couponRedemptionFinality()];
  if(r.type==='shipping')return ['仅限配送地址为美国（除阿拉斯加州和夏威夷州）的线上现货订单使用。','兑换后30天内有效，过期积分不可退回。','仅升级配送服务，具体到货日期由承运方时效决定。'];
  return ['兑换后30天内有效，过期积分不可退回。联系客服使用。','仅限退货地址为美国（除阿拉斯加州和夏威夷州）的线上合规订单使用。','承运方发货前可联系客服取消服务、退积分并恢复权益，承运方发货后不可取消。'];
@@ -426,8 +383,7 @@ function cartCouponModel(){
   if(state.qty<=0)reasons.push('购物车为空');
   if(selectedWallet){const invalid=couponValidity(selectedWallet,false);if(invalid&&!state.sync)reasons.push(invalid);}
   if(result.base<reward.min)reasons.push(`会员折后商品金额未满 ${money(reward.min)}`);
-  if(reward.autoIssued&&!wallet)reasons.push('优惠券已使用或不可用');
-   if(!wallet&&pointsForCoupon<reward.cost)reasons.push(`积分不足，差 ${number(reward.cost-pointsForCoupon)} 分${shippingCost?'（已预留配送升级积分）':''}`);
+     if(!wallet&&pointsForCoupon<reward.cost)reasons.push(`积分不足，差 ${number(reward.cost-pointsForCoupon)} 分${shippingCost?'（已预留配送升级积分）':''}`);
   const candidate=result.candidates.find(c=>c.id==='coupon');
   if(candidate.valid&&candidate.total>=withoutCoupon.chosen.total){
    const difference=round(candidate.total-withoutCoupon.chosen.total);
@@ -454,7 +410,7 @@ function normalizeCartCouponSelection(){
 function cartCouponOptions(model){
  const ordered=[...model.rows.filter(r=>r.eligible),...model.rows.filter(r=>!r.eligible)];
  return '<option value="">不使用积分券</option>'+ordered.map(row=>{
-  const r=row.reward,label=`${r.name} · ${r.onlineOnly?'无门槛 · 仅限官网':`满 $${r.min}`} · ${row.wallet?(r.autoIssued?'已到账':'已兑换'):'需 '+number(r.cost)+' 积分'}${row.eligible?'':' · 不可使用：'+row.reasons.join('；')}`;
+  const r=row.reward,label=`${r.name} · 满 $${r.min} · ${row.wallet?'已兑换':'需 '+number(r.cost)+' 积分'}${row.eligible?'':' · 不可使用：'+row.reasons.join('；')}`;
   return `<option value="${r.id}"${state.coupon===r.id&&row.eligible?' selected':''}${row.eligible?'':' disabled'}>${esc(label)}</option>`;
  }).join('');
 }
@@ -463,7 +419,7 @@ function cartCouponHint(result,model){
  const selected=model.rows.find(r=>r.reward.id===state.coupon&&r.eligible);
  if(selected){
   const r=selected.reward,discount=round(result.base-result.chosen.total);
-  const detail=selected.wallet?(r.autoIssued?'使用已到账优惠券，付款成功后核销。':'使用已兑换券，付款成功后核销，不重复扣积分。'):`付款成功时兑换并核销，需 ${number(r.cost)} 积分；当前未扣分。`;
+  const detail=selected.wallet?'使用已兑换券，付款成功后核销，不重复扣积分。':`付款成功时兑换并核销，需 ${number(r.cost)} 积分；当前未扣分。`;
   return `<div class="notice success cart-coupon-hint" id="cart-coupon-hint" role="status">本单已选用${esc(r.name)}，抵扣 ${money(discount)}，商品应付 ${money(result.chosen.total)}。${detail}</div>`;
  }
  const discount=round(result.subtotal-result.chosen.total);
@@ -584,7 +540,7 @@ function checkoutOrderSummary(){
  return `<div class="checkout-order-summary" id="checkout-order-summary"><h2 class="sr-only">Order summary</h2>
  ${cartAllocatedLines(result).map(checkoutSummaryProductHTML).join('')}
  <div class="checkout-discount-code"><label class="checkout-field" for="checkout-discountCode"><span>Discount code or gift card</span><input id="checkout-discountCode" data-checkout-field="discountCode" value="${esc(f.discountCode)}"></label><button class="checkout-apply" data-action="checkout-apply-code" ${f.discountCode.trim()?'':'disabled'}>Apply</button></div>
- ${result.chosen.id==='coupon'?(couponRewardById(state.coupon)?.onlineOnly?'<p class="checkout-coupon-preview">已使用线上无门槛优惠券，仅与会员基础折扣同用，每笔订单限用 1 张。付款成功后核销。</p>':'<p class="checkout-coupon-preview">本期不做线上积分优惠券的核销，此处仅为效果展示</p>'):''}
+ ${result.chosen.id==='coupon'?'<p class="checkout-coupon-preview">本期不做线上积分优惠券的核销，此处仅为效果展示</p>':''}
  <div class="checkout-cost-lines"><div class="checkout-summary-subtotal"><span>Subtotal · ${state.qty} 件</span><span class="num" aria-label="商品应付小计">${money(result.chosen.total)}</span></div><div><span>Shipping</span><span>${checkoutShippingPrice()}</span></div><div><span>Taxes</span><span>付款前核算</span></div>
  <div class="checkout-total"><strong>Total</strong><span><small>USD</small> <strong class="num">${money(result.chosen.total)}</strong></span></div><div class="checkout-earned-points" aria-live="polite"><span>预计可得积分</span><strong class="num">${number(result.points)} 积分</strong></div></div></div>`;
 }
@@ -718,7 +674,7 @@ document.addEventListener('click',event=>{
  else if(action==='checkout-pay')checkoutPay();
  else if(action==='checkout-summary-toggle'){state.checkoutSummaryOpen=!state.checkoutSummaryOpen;const wrap=document.getElementById('checkout-summary-wrap');if(wrap)wrap.hidden=!state.checkoutSummaryOpen;target.setAttribute('aria-expanded',String(state.checkoutSummaryOpen));target.querySelector('span').textContent='Order summary '+(state.checkoutSummaryOpen?'⌃':'⌄');}
  else if(action==='checkout-express')modal(target.dataset.id,`<p>${esc(target.dataset.id)} 快捷支付入口效果展示。当前原型不会跳转支付平台或产生真实扣款。</p>`,[{text:'返回结账',action:'close'}]);
- else if(action==='checkout-apply-code')applyOnlineLegacyCoupon();
+ else if(action==='checkout-apply-code')toast('该优惠码或礼品卡不可用，请检查后重试。');
  else if(action==='checkout-policy')modal(target.dataset.id==='privacy'?'Privacy policy':'Terms of service',`<p>可查看 Fioboc 官网的${target.dataset.id==='privacy'?'隐私政策':'服务条款'}。</p><a class="link" href="https://www.fioboc.com/policies/${target.dataset.id==='privacy'?'privacy-policy':'terms-of-service'}" target="_blank" rel="noopener">查看完整内容</a>`,[{text:'返回结账',action:'close'}]);
 },true);
 document.addEventListener('input',event=>{
@@ -766,10 +722,8 @@ const demoAccounts=new Map();
 let authFlow=null,profileEditing=null,authDrafts={signup:{},login:{}};
 const authBaseInit=init;
 init=function(which='vip2'){
- authBaseInit(which==='legacycredit'?'vip2':which);state.accountLoggedIn=state.joined;
- state.shopifyLoyaltyPoints=which==='legacycredit'?50:null;
- if(which==='legacycredit')state.qty=1;
- ensureLegacyLoyaltyCoupon();
+ authBaseInit(['legacycredit','legacycreditzero'].includes(which)?'vip2':which);state.accountLoggedIn=state.joined;
+ state.shopifyLoyaltyPoints=which==='legacycredit'?50:which==='legacycreditzero'?0:null;
  state.accountProfile={firstName:state.joined?'Alex':'',lastName:state.joined?'Morgan':'',nickname:'',birthday:'',country:'US',phone:state.joined?'2135550104':'',addresses:[]};
  authFlow=null;profileEditing=null;authDrafts={signup:{},login:{}};
 };
@@ -1074,6 +1028,10 @@ document.addEventListener('click',event=>{
    return {title:'Rewards 制度介绍',regions:found};
   }
   if(role==='storefront'){
+   if(cartView==='thank-you'){
+    add('.thank-you-loyalty','本单会员回馈 · 应用扩展区块','在 Shopify purchase.thank-you.block.render 的 ORDER_STATUS2 位置展示本单预计积分、发货满 30 天后的可用日期、当前与预计等级及进度；原生确认信息、订单详情与金额摘要作为背景示意，不属于本次改造范围。正式开发使用 Shopify 组件，会员数据由应用服务提供。','新增');
+    return {title:'结账成功感谢页',regions:found};
+   }
    if(cartView==='checkout'){
     add('.checkout-summary-product','商品优惠与折后金额','商品下逐行展示优惠名称及金额，右侧展示折后金额和划线原金额。');
     add('.checkout-earned-points','预计可得积分','仅在 Total 下方增加预计可得积分展示；商品应付金额向下取整后乘以会员等级积分倍率，不展示计算过程及额外金额说明。','新增');
@@ -1084,8 +1042,8 @@ document.addEventListener('click',event=>{
    return {title:'官网购物车',regions:found,empty:'打开购物车后查看商品优惠、小计与预计积分的调整区域。'};
   }
   if(page==='overview'){
-   add('.overview-member-summary','会员信息与积分整合','个人信息与会员积分合并；显示当前等级权益、近 12 个月累计净消费和共用积分余额；不再展示历史忠诚度积分余额；历史积分大于 0 时，按 500 积分 = $5 自动折算一张线上无门槛优惠券并放入「我的权益」；仅保留兑换积分、查看积分明细入口。移除升级进度及待入账、临期汇总。');
-   add('.overview-owned-rewards','我的权益及分类','增加全部、可用、已使用 / 已结束分类；移除查看全部，优惠券统一使用「查看券详情」入口；调整空态文案。所有我的权益入口统一定位此模块，不再提供独立权益页面。卡片券码右侧区分显示优惠券码、服务券码。历史积分自动折算券单独显示金额、无门槛及仅限官网标识，详情包含官网专用、仅叠加会员基础折扣、每单限用一张这三条限制，并支持复制券码后在官网结账时输入核销。');
+   add('.overview-member-summary','会员信息与积分整合','个人信息与会员积分合并；显示当前等级权益、近 12 个月累计净消费和共用积分余额；历史忠诚度积分大于 0 时在累计净消费下独立展示原积分余额，无货币符号；小于等于 0 或无数据时隐藏，不转为优惠券，也不并入现有会员积分；仅保留兑换积分、查看积分明细入口。移除升级进度及待入账、临期汇总。');
+   add('.overview-owned-rewards','我的权益及分类','增加全部、可用、已使用 / 已结束分类；移除查看全部，优惠券统一使用「查看券详情」入口；调整空态文案。所有我的权益入口统一定位此模块，不再提供独立权益页面。卡片券码右侧区分显示优惠券码、服务券码。');
    add('.account-card:has(>.account-rules)','会员与积分规则','更新加入会员、会员等级、赚取积分、优惠规则、有效期、退款说明；移除积分兑换、服务权益说明及底部入口。');
   }else if(page==='settings'){
    add('.profile-section:first-child','昵称与生日编辑','新增昵称、生日的填写、编辑、取消、保存与回显；昵称同步会员中心。','新增');
@@ -1171,4 +1129,117 @@ document.addEventListener('click',event=>{
  document.addEventListener('load',schedule,true);document.addEventListener('toggle',schedule,true);
 })();
 
-const requestedScenario=(location.search||'').match(/(?:\?|&)scenario=([a-z0-9]+)/);if(requestedScenario&&['vip2','member','vip1','vip3','new','low','downgrade','expiry','storecoupon','legacycredit'].includes(requestedScenario[1]))scenario=requestedScenario[1];init(scenario);document.getElementById('scenario').value=scenario;if(NAMES[location.hash.slice(1)])page=location.hash.slice(1);render();
+// Capture paid-order details before checkout state changes.
+function checkoutThankYouSnapshot(){
+ const result=cartResult();
+ return JSON.parse(JSON.stringify({
+  contact:checkoutFields(),items:cartAllocatedLines(result),quantity:state.qty,
+  subtotal:result.chosen.total,savings:round(result.subtotal-result.chosen.total),
+  earned:earnPoints(result.chosen.total,result.t.rate),shipping:checkoutShippingPrice(),
+  discountName:result.chosen.name,note:cartNote
+ }));
+}
+function checkoutThankYouPreview(){
+ const quantity=state.qty>0?state.qty:3;
+ const result=state.qty>0?cartResult():{...calculate({spend:thankYouEligibleSpend(today()),quantity,price:56}),quantity};
+ const items=state.qty>0?cartAllocatedLines(result):[{line:{id:'preview-shirt',name:'莫代尔混纺短袖T恤',englishName:'Modal Blend Short Sleeve Tee:Slim Fit',color:'黑色',size:'S',quantity,price:56,image:CART_INLINE_IMAGES['modal-black']},result:{...result,discountItems:cartDiscountItems(result)}}];
+ const draft=state.checkoutForm||{},profile=state.accountProfile||{};
+ const complete=['country','firstName','lastName','street','city','region','postal'].every(key=>String(draft[key]||'').trim());
+ const contact=complete?{...draft}:{country:'US',firstName:profile.firstName||'Alex',lastName:profile.lastName||'Morgan',street:'123 Demo Street',apartment:'',city:'Los Angeles',region:'CA',postal:'90012',phone:profile.phone||'2135550104',email:draft.email||state.email||'member@example.com',payment:draft.payment||'card'};
+ return JSON.parse(JSON.stringify({id:'DEMO-PREVIEW',preview:true,contact,items,quantity,subtotal:result.chosen.total,savings:round(result.subtotal-result.chosen.total),earned:earnPoints(result.chosen.total,result.t.rate),shipping:contact.country==='US'&&!['AK','HI'].includes(contact.region)&&(quantity>=3||state.first)?'免费':'未计入（演示）',discountName:result.chosen.name,note:''}));
+}
+function thankYouAddress(contact){
+ const countries={US:'美国',CA:'加拿大',GB:'英国',AU:'澳大利亚',CN:'中国'};
+ return `<p>${esc([contact.firstName,contact.lastName].filter(Boolean).join(' '))}<br>${esc(contact.street)}${contact.apartment?'<br>'+esc(contact.apartment):''}<br>${esc([contact.city,contact.region,contact.postal].filter(Boolean).join(' '))}<br>${esc(countries[contact.country]||contact.country)}${contact.phone?'<br>'+esc(contact.phone):''}</p>`;
+}
+// A new online payment contributes to the forecast, not to the effective tier.
+// Historical seed batches and POS purchases are already eligible. In production
+// this view model comes from the membership service, never from DOM inspection.
+function thankYouEligibleSpend(day,includeOrder=null){
+ return round((state.spendBatches||[]).reduce((sum,batch)=>{
+  if(batch.paid>day||batch.paid<=day-365)return sum;
+  const record=state.orders?.find(order=>order.id===batch.order);
+  if(record?.status==='canceled')return sum;
+  if(!record||record.channel==='LA POS'||batch.order===includeOrder)return sum+batch.net;
+  const pending=state.pending.find(entry=>entry.id===batch.order);
+  const availableDay=pending?.due??record.checkoutDetails?.availableDay??null;
+  return availableDay!==null&&availableDay<=day?sum+batch.net:sum;
+ },0));
+}
+function syncThankYouAvailability(){
+ for(const record of state.orders||[]){
+  const pending=state.pending.find(entry=>entry.id===record.id);
+  if(!record.checkoutDetails||pending?.due==null)continue;
+  record.checkoutDetails.availableDay=pending.due;
+  if(state.checkoutThankYou?.id===record.id)state.checkoutThankYou.availableDay=pending.due;
+ }
+}
+function thankYouLoyaltyModel(order){
+ const availableDay=order.availableDay??null;
+ const currentSpend=thankYouEligibleSpend(today());
+ const projectedSpend=round(thankYouEligibleSpend(availableDay??today(),order.id)+(order.preview?order.subtotal:0));
+ const current=TIERS[tierIndex(currentSpend)],projected=TIERS[tierIndex(projectedSpend)];
+ const next=TIERS[tierIndex(projectedSpend)+1]||null;
+ return {current,projected,projectedSpend,next,availableDay,
+  available:availableDay!==null&&availableDay<=today(),
+  remaining:next?round(Math.max(0,next.min-projectedSpend)):0};
+}
+function thankYouLoyaltyBlock(order){
+ const attrs='class="thank-you-card thank-you-loyalty" data-shopify-extension-target="purchase.thank-you.block.render" data-shopify-placement="ORDER_STATUS2"';
+ if(order.loyaltyStatus==='loading')return `<section ${attrs}><h2>本单会员回馈</h2><p role="status">会员信息正在同步，请稍后查看本单预计积分和等级。</p></section>`;
+ if(order.loyaltyStatus==='error')return `<section ${attrs}><h2>本单会员回馈</h2><p role="status">会员信息暂时无法加载，不影响订单确认。</p><button class="link" data-action="thank-you-loyalty-retry">重新加载</button></section>`;
+ const m=thankYouLoyaltyModel(order);
+ return `<section ${attrs}><h2>本单会员回馈</h2><dl class="thank-you-loyalty-values"><div><dt>本单预计可得积分</dt><dd><strong class="num">${number(order.earned)}</strong> 积分</dd></div><div><dt>可用日期</dt><dd>${m.availableDay===null?'待发货后确定':esc(date(m.availableDay))}<small>${m.available?'已转为可用积分':'发货满 30 天后可用'}</small></dd></div></dl><div class="thank-you-tier-progress"><h3>等级进度</h3><div class="thank-you-tier-comparison"><div><span>当前等级</span><strong>${m.current.name}</strong></div><span class="thank-you-tier-arrow" aria-hidden="true">→</span><div><span>发货满 30 天后预计等级</span><strong>${m.projected.name}</strong></div></div><p class="thank-you-tier-spend">本单计入后预计合规净消费 <strong class="num">${money(m.projectedSpend)}</strong></p>${m.next?`<progress class="thank-you-tier-meter" value="${m.projectedSpend}" max="${m.next.min}" aria-label="预计达到 ${m.next.name} 的消费进度"></progress><p class="thank-you-tier-gap">预计距 ${m.next.name} 还差 <strong class="num">${money(m.remaining)}</strong></p>`:'<p class="thank-you-tier-gap">预计达到最高等级 VIP3</p>'}</div><p class="thank-you-loyalty-note">按近 12 个月合规净消费及本单预估，退款或历史消费到期后将重新核算；最终以实际入账及等级结果为准。</p></section>`;
+}
+function checkoutThankYouPage(){
+ const order=state.checkoutThankYou,f=order.contact;
+ const check='<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="22"/><path d="m15 24 6 6 13-13"/></svg>';
+ const freeShipping=order.shipping==='免费';
+ return `<div class="checkout-page thank-you-page"><header class="checkout-header"><button class="checkout-brand" data-action="thank-you-shop" aria-label="继续购物，返回官网">FIOBOC</button></header><div class="thank-you-layout"><main id="main-content" class="thank-you-main"><div class="thank-you-heading">${check}<div><p>${order.preview?'示例订单 · ':''}确认编号 ${esc(order.id)}</p><h1 tabindex="-1">谢谢您，${esc(f.firstName||'FIOBOC 顾客')}！</h1></div></div><section class="thank-you-card thank-you-confirmation" aria-label="订单确认"><h2>您的订单已确认</h2><p>订单确认邮箱：${esc(f.email)}</p></section>${thankYouLoyaltyBlock(order)}<section class="thank-you-card thank-you-details"><h2>订单详细信息</h2><div class="thank-you-detail-grid"><div><h3>联系信息</h3><p>${esc(f.email)}</p><h3>收货地址</h3>${thankYouAddress(f)}<h3>发货方式</h3><p>标准配送</p></div><div><h3>付款方式</h3><p class="thank-you-payment"><span aria-hidden="true">▰</span> ${f.payment==='paypal'?'PayPal':'信用卡'}</p><h3>账单地址</h3>${thankYouAddress(f)}</div></div>${order.note?`<div class="thank-you-note"><h3>订单备注</h3><p>${esc(order.note)}</p></div>`:''}<label class="thank-you-save"><input type="checkbox" data-thank-you-save ${order.saveInfo?'checked':''}><span>保存我的信息以更快地结账</span></label></section><div class="thank-you-next"><p>需要帮助？ <button class="link" data-action="thank-you-help">联系我们</button></p><button class="thank-you-continue" data-action="thank-you-shop">继续购物</button></div><footer class="checkout-footer thank-you-footer"><button class="link" data-action="refund-policy">退款政策</button><button class="link" data-action="checkout-policy" data-id="privacy">隐私政策</button><button class="link" data-action="checkout-policy" data-id="terms">服务条款</button></footer></main><aside class="thank-you-sidebar" aria-label="已完成订单摘要"><h2 class="sr-only">订单摘要</h2>${order.items.map(checkoutSummaryProductHTML).join('')}<div class="thank-you-costs"><div><span>小计 · ${order.quantity} 件</span><span class="num">${money(order.subtotal)}</span></div><div><span>发货</span><span>${freeShipping?'免费':'未计入（演示）'}</span></div><div><span>税费</span><span>未计入（演示）</span></div><div class="thank-you-total"><strong>总计</strong><span><small>USD</small> <strong class="num">${money(order.subtotal)}</strong></span></div>${order.savings>0?`<p class="thank-you-savings">◇ &nbsp;总节省金额 <strong class="num">${money(order.savings)}</strong></p>`:''}</div><p class="thank-you-demo-note">本页为演示订单，总计为商品实付金额；未确定的运费及税费未计入。</p></aside></div></div>`;
+}
+const thankYouPreviousPlaceOrder=placeOrder;
+placeOrder=function(){
+ if(role==='storefront'&&cartView==='thank-you')return false;
+ const onlineCheckout=role==='storefront'&&cartView==='checkout';
+ const snapshot=onlineCheckout?checkoutThankYouSnapshot():null;
+ const completed=thankYouPreviousPlaceOrder();
+ if(!completed||!onlineCheckout)return completed;
+ snapshot.id=state.lastOrder;state.checkoutThankYou=snapshot;
+ const order=state.orders.find(order=>order.id===snapshot.id);if(order)order.checkoutDetails=JSON.parse(JSON.stringify(snapshot));
+ state.qty=0;state.cartItems=[];cartNote='';cartNoteOpen=false;
+ closeModal();cartView='thank-you';cartOpen=false;render();
+ document.getElementById('stage')?.scrollIntoView({block:'start'});
+ document.querySelector('.thank-you-heading h1')?.focus({preventScroll:true});
+ return true;
+};
+const thankYouPreviousRender=render;
+render=function(){
+ syncThankYouAvailability();
+ const show=role==='storefront'&&cartView==='thank-you'&&state.checkoutThankYou;
+ if(show){
+  const stage=document.getElementById('stage');stage.className='stage is-checkout'+(device==='mobile'?' mobile':'');stage.innerHTML=checkoutThankYouPage();
+  document.querySelectorAll('.reviewnav button').forEach(button=>{button.classList.remove('active');button.setAttribute('aria-pressed','false');});
+ }else thankYouPreviousRender();
+ const entry=document.querySelector('[data-action="thank-you-open"]');
+ if(entry){entry.disabled=false;entry.classList.toggle('active',!!show);entry.setAttribute('aria-pressed',String(!!show));}
+};
+const thankYouEntry=document.createElement('button');thankYouEntry.type='button';thankYouEntry.dataset.action='thank-you-open';thankYouEntry.textContent='结账感谢页';thankYouEntry.title='查看最近一笔订单，未下单时展示示例感谢页';
+document.querySelector('.reviewnav [data-action="checkout-open"]')?.after(thankYouEntry);
+document.addEventListener('click',event=>{
+ const button=event.target.closest('[data-action]');if(!button||button.disabled)return;
+ const action=button.dataset.action;if(!['thank-you-open','thank-you-shop','thank-you-help','thank-you-loyalty-retry'].includes(action))return;
+ event.preventDefault();event.stopImmediatePropagation();
+ if(action==='thank-you-open'){
+  if(!state.checkoutThankYou)state.checkoutThankYou=checkoutThankYouPreview();closeModal();role='storefront';page='checkout';cartView='thank-you';cartOpen=false;render();document.getElementById('stage')?.scrollIntoView({block:'start'});
+ }else if(action==='thank-you-shop'){
+  closeModal();role='storefront';page='checkout';cartView='collection';cartOpen=false;render();document.getElementById('stage')?.scrollIntoView({block:'start'});
+ }else if(action==='thank-you-loyalty-retry'){state.checkoutThankYou.loyaltyStatus='ready';render();}
+ else modal('联系我们',`<p>如需订单帮助，请在联系 FIOBOC 客服时提供确认编号 <strong>${esc(state.checkoutThankYou?.id||'')}</strong>。</p>`,[{text:'关闭',action:'close'}]);
+},true);
+document.addEventListener('change',event=>{
+ if(!event.target.matches('[data-thank-you-save]')||!state.checkoutThankYou)return;
+ state.checkoutThankYou.saveInfo=event.target.checked;
+ state.savedCheckoutDetails=event.target.checked?JSON.parse(JSON.stringify(state.checkoutThankYou.contact)):null;
+});
+
+const requestedScenario=(location.search||'').match(/(?:\?|&)scenario=([a-z0-9]+)/);if(requestedScenario&&['vip2','member','vip1','vip3','new','low','downgrade','expiry','storecoupon','legacycredit','legacycreditzero'].includes(requestedScenario[1]))scenario=requestedScenario[1];init(scenario);document.getElementById('scenario').value=scenario;if(NAMES[location.hash.slice(1)])page=location.hash.slice(1);render();

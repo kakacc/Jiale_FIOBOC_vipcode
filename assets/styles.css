@@ -413,3 +413,70 @@ h1,h2{font-size:20px;font-weight:700;line-height:24px;letter-spacing:0}h3{font-s
 
 /* Unified profile editor. */
 .profile-name-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}#profile-basic-form .auth-field:has(input[readonly]){background:#f8f8f8;cursor:default}#profile-basic-form .auth-field:has(input[readonly]):focus-within{box-shadow:none;border-color:#ccc}#profile-basic-form{margin-top:20px}.birthday-fields legend>span{display:inline-block}
+/* Payment confirmation, using the checkout typography and product components. */
+.thank-you-page{color:#202020;background:#fff;min-height:calc(100vh - 110px)}
+.stage.mobile.is-checkout:has(.thank-you-page){max-width:min(390px,calc(100% - 20px))}
+.thank-you-page .checkout-header{height:64px}
+.thank-you-layout{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:minmax(0,600px) minmax(0,500px);gap:0;align-items:start}
+.thank-you-main{padding:42px 40px 24px 20px;min-width:0}
+.thank-you-heading{display:flex;align-items:center;gap:15px;margin-bottom:50px}
+.thank-you-heading>svg{width:48px;height:48px;flex-shrink:0;fill:none;stroke:#303030;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.thank-you-heading p{color:#888;font-size:13px;margin-bottom:3px}
+.thank-you-heading h1{font-size:21px;line-height:1.4;font-weight:600;letter-spacing:0;overflow-wrap:anywhere}
+.thank-you-card{border:1px solid #dfdfdf;border-radius:13px;overflow:hidden;margin-bottom:14px}
+.thank-you-card h2{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 12px}
+.thank-you-card p{font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.thank-you-confirmation{padding:17px}
+.thank-you-details{padding:17px 17px 0}
+.thank-you-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.thank-you-details h3{font-size:14px;line-height:1.5;font-weight:600;margin:0 0 5px}
+.thank-you-detail-grid p{margin:0 0 15px}
+.thank-you-payment{display:flex;align-items:center;gap:8px}
+.thank-you-payment>span{font-size:25px;color:#999;line-height:1}
+.thank-you-note{margin-bottom:16px}
+.thank-you-note p{white-space:pre-wrap}
+.thank-you-save{border-top:1px solid #dfdfdf;background:#f7f7f7;display:flex;align-items:center;gap:10px;margin:0 -17px;padding:14px 17px;font-size:13px;line-height:1.5;cursor:pointer}
+.thank-you-save input{width:17px;height:17px;accent-color:#222;flex-shrink:0}
+.thank-you-next{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:24px}
+.thank-you-next p,.thank-you-next .link{font-size:13px;line-height:1.5}
+.thank-you-continue{background:#202020;color:white;border-radius:10px;font-size:14px;font-weight:600;padding:19px 23px;min-height:58px;white-space:nowrap}
+.thank-you-continue:hover{background:#3b3b3b}
+.thank-you-footer{margin-top:65px;border-top:0;padding-top:0;flex-wrap:wrap}
+.thank-you-sidebar{padding:42px 20px 35px 40px;min-width:0}
+.thank-you-sidebar .checkout-summary-product{margin-bottom:24px}
+.thank-you-sidebar .checkout-product-description strong{font-size:13px;line-height:1.5}
+.thank-you-costs>div{display:flex;align-items:baseline;justify-content:space-between;gap:15px;margin:10px 0;font-size:14px}
+.thank-you-costs .thank-you-total{font-size:20px;margin-top:24px}
+.thank-you-total small{font-size:12px;color:#888;margin-right:5px}
+.thank-you-savings{font-size:14px;margin-top:10px}
+.thank-you-points{border-top:1px solid #e5e5e5;margin-top:24px;padding-top:18px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:14px}
+.thank-you-points p{flex-basis:100%;font-size:12px;color:#777;line-height:1.5}
+.thank-you-demo-note{font-size:11px;color:#888;line-height:1.6;margin-top:22px}
+.reviewnav button[data-action="thank-you-open"]:disabled{opacity:.45;cursor:default}
+.thank-you-loyalty{padding:18px}
+.thank-you-loyalty-values{margin:0}
+.thank-you-loyalty-values>div{display:flex;align-items:baseline;justify-content:space-between;gap:18px;padding:9px 0;font-size:14px}
+.thank-you-loyalty-values dt{color:#666;flex-shrink:0}
+.thank-you-loyalty-values dd{margin:0;text-align:right}
+.thank-you-loyalty-values dd>strong{font-size:22px}
+.thank-you-loyalty-values small{display:block;font-size:12px;color:#777;line-height:1.5;margin-top:3px}
+.thank-you-tier-progress{border-top:1px solid #e5e5e5;padding-top:17px;margin-top:13px}
+.thank-you-tier-progress h3{font-size:14px;font-weight:600;margin-bottom:13px}
+.thank-you-tier-comparison{display:grid;grid-template-columns:minmax(0,1fr) 24px minmax(0,1fr);gap:8px;align-items:center}
+.thank-you-tier-comparison>div{background:#f7f7f7;border-radius:8px;padding:12px;min-width:0}
+.thank-you-tier-comparison>div>span{display:block;color:#777;font-size:12px;line-height:1.5;margin-bottom:5px}
+.thank-you-tier-comparison strong{font-size:18px;font-weight:600}
+.thank-you-tier-arrow{text-align:center;color:#888}
+.thank-you-tier-progress .thank-you-tier-spend{font-size:12px;color:#666;margin:14px 0 7px}
+.thank-you-tier-meter{display:block;width:100%;height:7px;accent-color:#333;border:none;border-radius:8px;overflow:hidden;background:#eee}
+.thank-you-tier-meter::-webkit-progress-bar{background:#eee}.thank-you-tier-meter::-webkit-progress-value{background:#333;border-radius:8px}.thank-you-tier-meter::-moz-progress-bar{background:#333;border-radius:8px}
+.thank-you-tier-progress .thank-you-tier-gap{font-size:12px;color:#666;margin-top:8px}
+.thank-you-loyalty .thank-you-loyalty-note{font-size:11px;color:#888;line-height:1.6;margin-top:15px}
+@media(max-width:900px){.thank-you-layout{display:flex;flex-direction:column;max-width:620px}.thank-you-main{padding:28px 22px 12px;width:100%}.thank-you-heading{margin-bottom:28px}.thank-you-sidebar{padding:20px 22px 32px;width:100%;border-top:1px solid #e5e5e5}.thank-you-footer{margin-top:35px}}
+@media(max-width:480px){.thank-you-detail-grid{gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.thank-you-heading h1{font-size:19px}.thank-you-next{gap:12px}.thank-you-continue{padding:16px 18px}.thank-you-card p{font-size:13px}}
+.mobile .thank-you-layout{display:flex;flex-direction:column}.mobile .thank-you-main{padding:28px 20px 12px;width:100%}.mobile .thank-you-sidebar{padding:20px 20px 32px;width:100%;border-top:1px solid #e5e5e5}.mobile .thank-you-heading{margin-bottom:28px}.mobile .thank-you-heading h1{font-size:19px}.mobile .thank-you-detail-grid{gap:16px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.mobile .thank-you-card p{font-size:13px}.mobile .thank-you-next{gap:12px}.mobile .thank-you-continue{padding:16px 18px}.mobile .thank-you-footer{margin-top:35px}
+
+/* Historical loyalty points are whole points, independent of monetary balances. */
+.overview-identity .identity-loyalty-label{min-width:0;max-width:100%}.overview-identity .identity-loyalty-note{font-size:12px}
+@media(max-width:700px){.overview-identity .identity-loyalty{align-items:flex-start;flex-wrap:nowrap}.overview-identity .identity-loyalty-label{flex:1}.overview-identity .identity-loyalty-note{display:block;font-size:11px}}
+.mobile .overview-identity .identity-loyalty{align-items:flex-start;flex-wrap:nowrap}.mobile .overview-identity .identity-loyalty-label{flex:1}.mobile .overview-identity .identity-loyalty-note{display:block;font-size:11px}
