@@ -402,6 +402,23 @@ h1,h2{font-size:20px;font-weight:700;line-height:24px;letter-spacing:0}h3{font-s
 /* Coupon details show the redemption code without a barcode. */
 .coupon-code-frame{background:#fff;border:1px solid #dfdfdf;border-radius:12px;padding:24px 16px;text-align:center;margin:20px 0}.coupon-code-frame .wallet-code{display:inline-block;padding:9px 14px;margin-bottom:12px}
 
+/* Ended coupons keep the code as a record and show their final status. */
+.coupon-ended-backdrop{background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.coupon-ended-modal{max-width:520px;border-radius:18px;padding:22px;background:#fafafa}
+.coupon-ended-modal h2{font-size:21px;line-height:1.4;margin:0 40px 16px 0}
+.coupon-ended-modal .close{color:#777;font-size:28px;line-height:1;padding:0 2px}
+.coupon-ended-modal .coupon-ended-subtitle{color:#777;font-size:15px;font-weight:600;margin:0 0 12px}
+.coupon-ended-modal .coupon-ended-status{color:#777;font-size:14px;line-height:1.6;margin:0 0 16px}
+.coupon-ended-code{padding:18px 16px;background:#f1f1f1;border:1px dashed #d7d7d7;border-radius:12px;text-align:center}
+.coupon-ended-modal .coupon-ended-label{font-size:14px;color:#777;margin:0 0 10px}
+.coupon-ended-code-value{display:block;color:#111;font-size:18px;font-weight:600;overflow-wrap:anywhere}
+.coupon-ended-modal .coupon-ended-hint{font-size:14px;color:#777;margin:10px 0 0}
+.coupon-ended-modal .actions{margin-top:18px;justify-content:flex-start}
+.coupon-ended-modal .actions .btn{font-weight:600;min-height:46px;background:#fafafa}
+body:has(#modalhost .coupon-ended-backdrop){overflow:hidden}
+body:has(#stage.mobile) .coupon-ended-modal{max-width:350px;padding:20px}
+@media(max-width:480px){.coupon-ended-modal{padding:20px}.coupon-ended-modal h2{font-size:20px}.coupon-ended-modal .coupon-ended-status{font-size:13px}}
+
 /* Identify coupon and service codes directly on owned-reward cards. */
 .wallet-card-code{display:flex;align-items:center;justify-content:space-between;gap:12px}.wallet-card-code .wallet-code-value{min-width:0;overflow-wrap:anywhere}.wallet-card-code .wallet-code-label{flex-shrink:0;color:#777;font:400 11px/1.5 Arial,"PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:0;white-space:nowrap}
 
@@ -468,6 +485,7 @@ h1,h2{font-size:20px;font-weight:700;line-height:24px;letter-spacing:0}h3{font-s
 .thank-you-tier-comparison strong{font-size:18px;font-weight:600}
 .thank-you-tier-arrow{text-align:center;color:#888}
 .thank-you-tier-progress .thank-you-tier-spend{font-size:12px;color:#666;margin:14px 0 7px}
+.thank-you-tier-progress .thank-you-tier-pending{font-size:12px;color:#666;line-height:1.6;margin:0 0 10px}
 .thank-you-tier-meter{display:block;width:100%;height:7px;accent-color:#333;border:none;border-radius:8px;overflow:hidden;background:#eee}
 .thank-you-tier-meter::-webkit-progress-bar{background:#eee}.thank-you-tier-meter::-webkit-progress-value{background:#333;border-radius:8px}.thank-you-tier-meter::-moz-progress-bar{background:#333;border-radius:8px}
 .thank-you-tier-progress .thank-you-tier-gap{font-size:12px;color:#666;margin-top:8px}

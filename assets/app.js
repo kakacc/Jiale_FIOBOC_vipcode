@@ -206,9 +206,24 @@ function couponValidity(w,amount=true){
 }
 function couponDetail(id){
  const w=state.wallet.find(w=>w.id===id),r=w&&REWARDS.find(r=>r.id===w.reward);if(!w||!r||r.type!=='coupon')return;
+ const used=['used','consumed'].includes(w.status),expired=w.status==='expired'||w.status==='available'&&rewardExpired(w);
+ if(used||expired){
+  const status=used?'此优惠券已使用':'此优惠券已过期';
+  const expires=date(w.expires??w.created+30).replace(/(\d{4})-(\d{2})-(\d{2})/,(_,year,month,day)=>`${year} 年 ${Number(month)} 月 ${Number(day)} 日`);
+  modal(`满${r.min}美元减${r.value}美元`,`<div class="coupon-detail coupon-ended-detail" data-coupon-status="${used?'used':'expired'}">${used?'<p class="coupon-ended-subtitle">已使用优惠券</p>':''}<p class="coupon-ended-status">${status}${used?'。':` · 有效期至 ${esc(expires)}。`}</p><div class="coupon-ended-code"><p class="coupon-ended-label">优惠码</p><strong class="coupon-ended-code-value">${esc(w.code)}</strong><p class="coupon-ended-hint">${status}</p></div></div>`,[{text:'继续购物',action:'coupon-ended-shop',secondary:true}]);
+  const dialog=document.querySelector('#modalhost .modal');dialog.classList.add('coupon-ended-modal');dialog.closest('.modal-backdrop').classList.add('coupon-ended-backdrop');
+  return;
+ }
  const active=w.status==='available'&&today()-w.created<30,labels={available:'可用',used:'已使用',expired:'已过期',canceled:'已撤销'};
  modal(r.name+' · 优惠券详情',`<div class="coupon-detail"><div class="row between"><span>${esc(state.name)} · ${tier().name}</span><span class="pill">${labels[w.status]||w.status}</span></div>${active?`<div class="coupon-code-frame"><strong class="wallet-code">${esc(w.code)}</strong><p class="coupon-hint">线下买单时请提供当前券码给店员核销</p></div>`:`<div class="detail"><strong>${esc(w.code)}</strong><p>此券已${w.status==='used'?'使用':w.status==='expired'?'过期':'撤销'}，不能再次核销。</p></div>`}${rewardUseLimitDetails(r)}${w.order?`<div class="detail">核销订单：${esc(w.order)}<br>渠道：${esc(w.usedChannel||'官网')}<br>操作人：${esc(w.usedActor||'系统')}<br>核销方式：${esc(w.usedMethod||'线上结账')}</div>`:''}</div>`,[{text:'关闭',action:'close',secondary:true}]);
 }
+document.addEventListener('click',event=>{
+ const shop=event.target.closest('[data-action="coupon-ended-shop"]');
+ if(shop){
+  event.preventDefault();event.stopImmediatePropagation();closeModal();role='storefront';page='checkout';cartView='collection';cartOpen=false;render();document.getElementById('stage')?.scrollIntoView({block:'start'});return;
+ }
+ if(event.target.matches('.coupon-ended-backdrop')){event.preventDefault();event.stopImmediatePropagation();closeModal();}
+},true);
 function overviewOwnedRewards(){
  const selected=['all','available','used'].includes(filter)?filter:'all';
  const cards=state.wallet.filter(w=>selected==='all'||(selected==='available'?w.status==='available':['used','expired','canceled','consumed'].includes(w.status)));
@@ -1002,6 +1017,10 @@ document.addEventListener('click',event=>{
   const dialog=document.querySelector('#modalhost .modal');
   if(dialog){
    const title=dialog.querySelector('h2')?.textContent||'详情弹窗';
+   if(dialog.classList.contains('coupon-ended-modal')){
+    add('#modalhost .coupon-ended-modal','已使用 / 已过期券详情','按终态展示优惠码与「此优惠券已使用 / 已过期」；已使用券不显示有效期，已过期券保留实际到期日期；移除使用限制、复制代码及核销引导，保留继续购物。');
+    return {title:'弹窗 · '+title,regions:found};
+   }
    const notes=[
     [/积分流水详情/,'仅保留积分流水名称、变更、来源订单/权益、时间、渠道。'],
     [/会员凭证/,'展示会员身份与账户信息，移除 POS 扫码方案待确认说明。'],
@@ -1029,7 +1048,7 @@ document.addEventListener('click',event=>{
   }
   if(role==='storefront'){
    if(cartView==='thank-you'){
-    add('.thank-you-loyalty','本单会员回馈 · 应用扩展区块','在 Shopify purchase.thank-you.block.render 的 ORDER_STATUS2 位置展示本单预计积分、发货满 30 天后的可用日期、当前与预计等级及进度；原生确认信息、订单详情与金额摘要作为背景示意，不属于本次改造范围。正式开发使用 Shopify 组件，会员数据由应用服务提供。','新增');
+    add('.thank-you-loyalty','本单会员回馈 · 应用扩展区块','在 Shopify purchase.thank-you.block.render 的 ORDER_STATUS2 位置展示本单预计积分、发货满 30 天后的可用日期、当前与预计等级及进度；预计合规净消费纳入其他待入账金额并单独标注（不含本单），满足各订单入账条件后实际计入；原生确认信息、订单详情与金额摘要作为背景示意，不属于本次改造范围。正式开发使用 Shopify 组件，会员数据由应用服务提供。','新增');
     return {title:'结账成功感谢页',regions:found};
    }
    if(cartView==='checkout'){
@@ -1182,13 +1201,35 @@ function syncThankYouAvailability(){
   if(state.checkoutThankYou?.id===record.id)state.checkoutThankYou.availableDay=pending.due;
  }
 }
+// Forecast other pending orders once, using remaining eligible net spend rather
+// than point amounts. Orders already in the projection must not be added twice.
+function thankYouOtherPendingSpend(order,day){
+ const seen=new Set([order.id]);
+ return (state.pending||[]).reduce((result,pending)=>{
+  if(seen.has(pending.id))return result;
+  seen.add(pending.id);
+  const record=state.orders?.find(entry=>entry.id===pending.id);
+  const batch=state.spendBatches?.find(entry=>entry.order===pending.id);
+  if(record?.status==='canceled'||record?.channel==='LA POS')return result;
+  const paid=batch?.paid??record?.paid;
+  if(paid!==undefined&&(paid>day||paid<=day-365))return result;
+  const net=Number(batch?.net??record?.net??pending.net);
+  if(!Number.isFinite(net)||net<=0)return result;
+  result.net=round(result.net+net);
+  const availableDay=pending.due??record?.checkoutDetails?.availableDay??null;
+  const alreadyIncluded=batch&&(!record||(availableDay!==null&&availableDay<=day));
+  if(!alreadyIncluded)result.additionalNet=round(result.additionalNet+net);
+  return result;
+ },{net:0,additionalNet:0});
+}
 function thankYouLoyaltyModel(order){
  const availableDay=order.availableDay??null;
  const currentSpend=thankYouEligibleSpend(today());
- const projectedSpend=round(thankYouEligibleSpend(availableDay??today(),order.id)+(order.preview?order.subtotal:0));
+ const projectionDay=availableDay??today(),pending=thankYouOtherPendingSpend(order,projectionDay);
+ const projectedSpend=round(thankYouEligibleSpend(projectionDay,order.id)+pending.additionalNet+(order.preview?order.subtotal:0));
  const current=TIERS[tierIndex(currentSpend)],projected=TIERS[tierIndex(projectedSpend)];
  const next=TIERS[tierIndex(projectedSpend)+1]||null;
- return {current,projected,projectedSpend,next,availableDay,
+ return {current,projected,projectedSpend,otherPendingSpend:pending.net,next,availableDay,
   available:availableDay!==null&&availableDay<=today(),
   remaining:next?round(Math.max(0,next.min-projectedSpend)):0};
 }
@@ -1197,7 +1238,7 @@ function thankYouLoyaltyBlock(order){
  if(order.loyaltyStatus==='loading')return `<section ${attrs}><h2>本单会员回馈</h2><p role="status">会员信息正在同步，请稍后查看本单预计积分和等级。</p></section>`;
  if(order.loyaltyStatus==='error')return `<section ${attrs}><h2>本单会员回馈</h2><p role="status">会员信息暂时无法加载，不影响订单确认。</p><button class="link" data-action="thank-you-loyalty-retry">重新加载</button></section>`;
  const m=thankYouLoyaltyModel(order);
- return `<section ${attrs}><h2>本单会员回馈</h2><dl class="thank-you-loyalty-values"><div><dt>本单预计可得积分</dt><dd><strong class="num">${number(order.earned)}</strong> 积分</dd></div><div><dt>可用日期</dt><dd>${m.availableDay===null?'待发货后确定':esc(date(m.availableDay))}<small>${m.available?'已转为可用积分':'发货满 30 天后可用'}</small></dd></div></dl><div class="thank-you-tier-progress"><h3>等级进度</h3><div class="thank-you-tier-comparison"><div><span>当前等级</span><strong>${m.current.name}</strong></div><span class="thank-you-tier-arrow" aria-hidden="true">→</span><div><span>发货满 30 天后预计等级</span><strong>${m.projected.name}</strong></div></div><p class="thank-you-tier-spend">本单计入后预计合规净消费 <strong class="num">${money(m.projectedSpend)}</strong></p>${m.next?`<progress class="thank-you-tier-meter" value="${m.projectedSpend}" max="${m.next.min}" aria-label="预计达到 ${m.next.name} 的消费进度"></progress><p class="thank-you-tier-gap">预计距 ${m.next.name} 还差 <strong class="num">${money(m.remaining)}</strong></p>`:'<p class="thank-you-tier-gap">预计达到最高等级 VIP3</p>'}</div><p class="thank-you-loyalty-note">按近 12 个月合规净消费及本单预估，退款或历史消费到期后将重新核算；最终以实际入账及等级结果为准。</p></section>`;
+ return `<section ${attrs}><h2>本单会员回馈</h2><dl class="thank-you-loyalty-values"><div><dt>本单预计可得积分</dt><dd><strong class="num">${number(order.earned)}</strong> 积分</dd></div><div><dt>可用日期</dt><dd>${m.availableDay===null?'待发货后确定':esc(date(m.availableDay))}<small>${m.available?'已转为可用积分':'发货满 30 天后可用'}</small></dd></div></dl><div class="thank-you-tier-progress"><h3>等级进度</h3><div class="thank-you-tier-comparison"><div><span>当前等级</span><strong>${m.current.name}</strong></div><span class="thank-you-tier-arrow" aria-hidden="true">→</span><div><span>发货满 30 天后预计等级</span><strong>${m.projected.name}</strong></div></div><p class="thank-you-tier-spend">本单计入后预计合规净消费 <strong class="num">${money(m.projectedSpend)}</strong></p>${m.otherPendingSpend>0?`<p class="thank-you-tier-pending">含其他待入账合规净消费 <strong class="num">${money(m.otherPendingSpend)}</strong>（不含本单）。预计等级已计入该金额，各订单满足入账条件后实际计入。</p>`:''}${m.next?`<progress class="thank-you-tier-meter" value="${m.projectedSpend}" max="${m.next.min}" aria-label="预计达到 ${m.next.name} 的消费进度"></progress><p class="thank-you-tier-gap">预计距 ${m.next.name} 还差 <strong class="num">${money(m.remaining)}</strong></p>`:'<p class="thank-you-tier-gap">预计达到最高等级 VIP3</p>'}</div><p class="thank-you-loyalty-note">按近 12 个月合规净消费及本单预估，退款或历史消费到期后将重新核算；最终以实际入账及等级结果为准。</p></section>`;
 }
 function checkoutThankYouPage(){
  const order=state.checkoutThankYou,f=order.contact;
