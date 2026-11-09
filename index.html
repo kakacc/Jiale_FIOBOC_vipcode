@@ -5,10 +5,214 @@
 <title>FIOBOC 会员积分原型 · 会员中心、Rewards 与官网购物流程</title>
 <link rel="stylesheet" href="./assets/styles.css">
 </head>
-<body>
-<header class="reviewbar"><div class="review-title"><span class="version">07</span><div><strong>Fioboc 会员与积分</strong><span class="small" style="margin-left:12px;color:#b2baa9">会员中心、Rewards 与官网购物流程 · 2026.10.15</span></div></div><button type="button" id="review-changes-toggle" class="review-changes-toggle" aria-pressed="false" aria-controls="review-changes-summary">查看需调整区域</button></header>
+<body data-project-version="1.1.0">
+<header class="reviewbar">
+  <div class="review-title">
+    <label for="project-version"><strong>Fioboc 会员与积分</strong></label>
+    <select id="project-version" aria-label="项目版本">
+      <option value="1.1.0" selected>V1.1.0 （当前版本）</option>
+      <option value="1.0.0">V1.0.0 （2026-11-04已交付）</option>
+    </select>
+    <nav class="current-prototype-nav" aria-label="V1.1.0 原型页面">
+      <button type="button" id="current-member-tab" aria-pressed="true">Member Center</button>
+      <button type="button" id="current-product-tab" aria-pressed="false">商品详情页</button>
+      <button type="button" id="current-cart-tab" aria-pressed="false">官网购物车</button>
+      <button type="button" id="current-order-tab" aria-pressed="false">订单详情页</button>
+    </nav>
+    <label class="current-order-controls" id="current-order-controls" hidden>
+      预览订单
+      <select id="current-order-scenario"></select>
+    </label>
+  </div>
+  <button type="button" id="review-changes-toggle" class="review-changes-toggle" aria-pressed="false" aria-controls="review-changes-summary">查看需调整的区域</button>
+</header>
+<main id="current-prototype" aria-label="V1.1.0 原型">
+  <div class="return-member" id="current-member-content" lang="en">
+    <header class="return-member-header">
+      <div class="return-member-shell return-member-header-row">
+        <span class="return-member-brand">FIOBOC</span>
+        <div class="return-member-account">
+          <span class="return-member-credit">$10.00</span>
+          <span class="return-member-avatar" aria-label="Account avatar">徐</span>
+        </div>
+      </div>
+    </header>
+    <div class="return-member-shell return-member-layout">
+      <aside class="return-member-nav" aria-label="Account sections">
+        <button type="button" id="current-member-orders">Orders</button>
+        <span>Review Your<br> Purchase</span>
+        <span>Profile</span>
+        <strong aria-current="page">Member Center</strong>
+      </aside>
+      <div class="return-member-content">
+        <div class="return-member-overview">
+          <section class="return-member-panel" aria-labelledby="return-points-title">
+            <div class="return-points-heading">
+              <div>
+                <p class="return-member-kicker">Your points</p>
+                <h1 id="return-points-title">Points balance</h1>
+              </div>
+              <button type="button" class="return-member-link" disabled>View history</button>
+            </div>
+            <p class="return-points-total"><strong>4,500</strong> <span>available</span></p>
+            <div class="return-pending-points">
+              <span>Pending</span>
+              <strong>0 points</strong>
+            </div>
+            <div class="return-points-progress">
+              <div><span>First reward</span><strong>4,500 / 500</strong></div>
+              <progress aria-label="First reward progress" value="500" max="500"></progress>
+            </div>
+            <div class="return-points-actions">
+              <button type="button" class="return-btn" disabled>Redeem $5 off $100</button>
+              <button type="button" class="return-member-link" disabled>How points work</button>
+            </div>
+          </section>
+          <section class="return-member-panel return-featured" aria-labelledby="return-featured-title">
+            <p class="return-member-kicker">Featured reward</p>
+            <h2 id="return-featured-title">Your points reward is ready</h2>
+            <p class="return-featured-value"><strong>$5 off $100</strong></p>
+            <p class="return-featured-description">Redeem 500 points for $5 off $100 on orders over $100.00.</p>
+            <div class="return-featured-actions">
+              <button type="button" class="return-btn" disabled>Shop Now</button>
+              <button type="button" class="return-btn return-btn-secondary" disabled>Browse All Rewards</button>
+            </div>
+          </section>
+        </div>
+        <section class="return-member-panel return-member-rewards" aria-labelledby="return-rewards-title">
+          <div class="return-rewards-heading">
+            <div>
+              <p class="return-member-kicker">Ready to use</p>
+              <h2 id="return-rewards-title">My rewards</h2>
+              <p>Limit one coupon code per order</p>
+            </div>
+            <button type="button" class="return-btn" disabled>Browse All Rewards</button>
+          </div>
+          <div class="return-reward-filters" role="group" aria-label="Reward status">
+            <button type="button" id="return-rewards-available" aria-controls="return-available-list" aria-pressed="true">Available (2)</button>
+            <button type="button" id="return-rewards-used" aria-controls="return-used-list" aria-pressed="false">Used / expired (0)</button>
+          </div>
+          <div id="return-available-list">
+            <article class="return-member-reward">
+              <div class="return-reward-info">
+                <span class="return-reward-icon" aria-hidden="true">RET</span>
+                <div>
+                  <h3>Free US returns</h3>
+                  <p>Available | Code <span id="return-row-code">USFR-21-EW9</span></p>
+                </div>
+              </div>
+              <div class="return-reward-actions">
+                <button type="button" class="return-btn return-btn-secondary" data-return-copy="return-row-code">Copy code</button>
+                <button type="button" class="return-btn" id="return-details" aria-haspopup="dialog">View coupon details</button>
+              </div>
+            </article>
+            <article class="return-member-reward">
+              <div class="return-reward-info">
+                <span class="return-reward-icon" aria-hidden="true">$5.00</span>
+                <div>
+                  <h3>$5 off $100</h3>
+                  <p>Valid through Dec 5, 2026 | Code <span id="return-discount-row-code">CP5-20-4KT</span></p>
+                  <span class="return-reward-expiry">Expires in 27 days</span>
+                </div>
+              </div>
+              <div class="return-reward-actions">
+                <button type="button" class="return-btn return-btn-secondary" data-return-copy="return-discount-row-code">Copy code</button>
+                <button type="button" class="return-btn" id="return-discount-details" aria-haspopup="dialog">View coupon details</button>
+              </div>
+            </article>
+          </div>
+          <p id="return-used-list" class="return-rewards-empty" hidden>No used or expired rewards.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <section class="order-detail-page" id="current-order-detail" lang="en" aria-label="Order details" hidden></section>
+
+  <dialog class="return-dialog" id="return-discount-dialog" aria-labelledby="return-discount-title">
+    <section class="return-coupon" lang="en">
+      <header class="return-coupon-heading">
+        <h2 id="return-discount-title">$5 off $100</h2>
+        <form method="dialog">
+          <button type="submit" class="return-coupon-close" aria-label="Close coupon details" autofocus>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4 4 12 12M16 4 4 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </button>
+        </form>
+      </header>
+      <p class="return-coupon-label">Available coupon</p>
+      <p>This coupon is valid through Dec 5, 2026.</p>
+      <div class="return-code">
+        <span>Coupon code</span>
+        <strong id="return-discount-code">CP5-20-4KT</strong>
+      </div>
+      <footer class="return-coupon-actions">
+        <button type="button" class="return-btn" data-return-copy="return-discount-code">Copy code</button>
+      </footer>
+    </section>
+  </dialog>
+
+  <dialog class="return-dialog" id="return-dialog" aria-labelledby="return-coupon-title">
+    <section id="return-coupon" class="return-coupon" lang="en">
+      <header class="return-coupon-heading">
+        <h2 id="return-coupon-title">Free US returns</h2>
+        <button type="button" id="return-coupon-close" class="return-coupon-close" aria-label="Close coupon details" autofocus>
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4 4 12 12M16 4 4 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
+      </header>
+      <p class="return-coupon-label">Available coupon</p>
+      <p>This coupon is valid through its expiration date.</p>
+      <div class="return-code">
+        <span>Coupon code</span>
+        <strong id="return-code-value">USFR-21-EW9</strong>
+        <p>Present this coupon code to a store associate for redemption.</p>
+      </div>
+      <details class="return-terms">
+        <summary>Terms &amp; Conditions</summary>
+        <p>Contact customer service with your coupon code and original US online order details to request a return.</p>
+      </details>
+      <footer class="return-coupon-actions">
+        <button type="button" class="return-btn" id="return-copy-code">Copy code</button>
+        <button type="button" class="return-btn return-btn-secondary" id="return-use">Use</button>
+        <span class="return-copy-status" id="return-copy-status" role="status"></span>
+      </footer>
+    </section>
+
+    <section id="return-composer" class="return-composer" aria-label="新邮件" hidden>
+      <header class="return-mail-toolbar">
+        <div class="return-mail-window-controls">
+          <button type="button" id="return-mail-close" aria-label="关闭新邮件" title="关闭新邮件"></button>
+          <span aria-hidden="true"></span><span aria-hidden="true"></span>
+        </div>
+        <div class="return-mail-tools" aria-hidden="true">
+          <span>
+            <svg viewBox="0 0 24 24"><path d="M10 5 3 12l7 7v-5c5 0 8 1 11 5 0-8-4-11-11-11Z"/></svg>
+            <b>格式</b>
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14c2 3 6 3 8 0M9 9h.1m5.8 0h.1"/></svg>
+          </span>
+          <span><svg viewBox="0 0 24 24"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="M6 8h2m2 0h7M6 11h2m2 0h7"/></svg>⌄</span>
+          <span><svg viewBox="0 0 24 24"><path d="m8 13 7-7a2.4 2.4 0 0 1 3.4 3.4l-9.2 9.2a3.8 3.8 0 0 1-5.4-5.4l10-10m4.6 9.6-7.3 7.3"/></svg>⌄</span>
+          <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16V8m-4 4 4-4 4 4"/></svg>⌄</span>
+        </div>
+        <button class="return-mail-send" type="button" aria-label="发送" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4M5 11l7-7 7 7"/></svg>
+        </button>
+      </header>
+      <div class="return-mail-fields">
+        <div class="return-mail-field">
+          <span>收件人：</span><strong class="return-mail-recipient">service@fioboc.com</strong>
+        </div>
+        <label class="return-mail-field"><span>抄送：</span><input type="text" autocomplete="off"></label>
+        <label class="return-mail-field"><span>主题：</span><input type="text" autocomplete="off"></label>
+      </div>
+      <textarea id="return-mail-body" aria-label="邮件正文" spellcheck="false"></textarea>
+    </section>
+  </dialog>
+</main>
+<div id="delivered-prototype" hidden>
 <div class="tools"><div class="row wrap"><label for="scenario">演示场景</label><select id="scenario"><option value="vip2">VIP2 · 标准账户</option><option value="member">Member · 待升级</option><option value="vip1">VIP1 · 标准账户</option><option value="vip3">VIP3 · 最高等级</option><option value="new">新客 · 尚未加入</option><option value="low">积分不足 · 120 分</option><option value="downgrade">退款降级 · VIP2 $540</option><option value="expiry">即将到期 / 过期券</option><option value="storecoupon">优惠券 · 已兑换 $5 券</option><option value="legacycredit">历史忠诚度积分 · 50</option><option value="legacycreditzero">历史忠诚度积分 · 已用完</option></select><span class="hint muted">仅使用虚构数据，操作不会影响真实店铺</span></div><nav class="reviewnav" aria-label="原型页面"><button data-action="auth-open" data-id="auth" aria-pressed="false">注册 / 登录</button><button data-action="rewards-guide-open" aria-pressed="false">Rewards 制度介绍</button><button data-role="storefront">官网购物车</button><button data-action="checkout-open" aria-pressed="false">官网结账页</button><button data-role="customer" class="active">账户会员页</button></nav><div class="row"><button id="advance">推进 30 天</button><button id="reset">重置演示</button><button id="desktop" class="active" aria-pressed="true">桌面</button><button id="mobile" aria-pressed="false">手机</button></div></div>
 <div id="stage" class="stage"></div><div id="modalhost"></div><div id="toasthost" aria-live="polite"></div>
-<script src="./assets/app.js" defer></script>
+</div>
+<script src="./assets/prototype.js"></script>
+<script src="./assets/app.js"></script>
 </body>
 </html>
