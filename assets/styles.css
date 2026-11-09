@@ -675,11 +675,16 @@ body[data-project-version="1.1.0"] .product-delivered-price,
 body[data-project-version="1.0.0"] .current-prototype-nav,
 body[data-project-version="1.0.0"] .cart-membership-link,
 body[data-project-version="1.0.0"] .product-current-price { display: none !important; }
-.product-main-price.product-current-price {
+.product-current-price {
+  display: grid;
+  gap: 6px;
+}
+.product-current-price .product-main-price {
   align-items: center;
   flex-wrap: wrap;
   gap: 6px 10px;
 }
+.product-current-price .product-member-price strong { font-size: 18px; }
 .product-price-badge {
   padding: 3px 8px;
   border: 1px solid #111;

@@ -120,7 +120,7 @@ document.addEventListener('click',event=>{const el=event.target.closest('button'
 });
 document.addEventListener('change',event=>{const e=event.target;if(e.id==='scenario'){scenario=e.value;init(scenario);page=scenario==='new'?'join':'overview';closeModal();render();toast('演示数据已切换。');}else if(e.id==='coupon-select'){state.coupon=e.value||null;render();}else if(e.id==='delivery-select'){state.address=e.value;if(state.address!=='us')state.ship=false;render();}else if(e.id==='shipping-input'){state.ship=e.checked;render();}else if(e.id==='first-input'){state.first=e.checked;render();}else if(e.id==='promo-input'){state.promo=Math.min(80,Math.max(0,Number(e.value)||0));render();}else if(e.id==='return-reason'){state.returnReason=e.value;state.returnExempt=false;render();}});
 document.addEventListener('submit',event=>{event.preventDefault();const form=event.target;if(form.id==='join-form'){const email=document.getElementById('join-email').value.trim();if(!document.getElementById('join-consent').checked)return toast('请先明确同意加入会员计划。');state.email=email;state.marketing=document.getElementById('join-marketing').checked;state.joinStep=1;render();toast('演示验证码已生成，请在“设计说明”查看。');}else if(form.id==='verify-form'){if(document.getElementById('verify-code').value!=='246810'){document.getElementById('join-error').innerHTML='<div class="notice error">验证码错误，请重新输入。</div>';return;}state.joined=true;state.joinStep=0;const existing=state.email.toLowerCase()==='alex@example.com';if(existing){init('vip2');state.joined=true;state.bonus=true;}else if(!state.bonus){grantPoints(100);log('首次验证并加入会员',100);state.bonus=true;}page='overview';render();toast(existing?'已绑定既有会员账户，不重复赠送加入积分。':'加入成功，100 积分已到账。');}else if(form.id==='search-form'){const value=document.getElementById('customer-search').value.trim().toLowerCase();if(state.joined&&value===state.email.toLowerCase()){state.found=true;render();toast('已找到唯一客户，请确认并绑定至购物车。');}else if(value==='duplicate@example.com'){state.found=false;state.bound=false;render();modal('发现重复客户档案','<p>同一邮箱关联两个客户档案，禁止自动合并或转移积分。请主管核对历史订单、账户归属和同意记录后处理。</p><div class="detail">客户 #028164 · 5 笔历史订单<br>客户 #038201 · 1 笔历史订单<br>本单暂未绑定，不允许会员匿名结账。</div>',[{text:'返回查询',action:'close'}]);}else if(value==='new@example.com'){init('new');role='customer';page='join';render();toast('请由顾客验证邮箱并主动同意加入，营销订阅另取同意。');}else if(value==='alex@example.com'||value==='+12135550104'){if(state.email!=='alex@example.com')init('vip2');state.found=true;render();toast('已找到唯一客户，请确认并绑定至购物车。');}else{state.found=false;state.bound=false;render();toast('未找到会员，请核对邮箱 / 手机号，或引导顾客主动加入。');}}});
-document.addEventListener('keydown',event=>{if(event.key==='Escape')closeModal();if(event.key==='Tab'&&document.querySelector('.modal')){const nodes=[...document.querySelectorAll('.modal button,.modal input,.modal select,.modal a[href]')].filter(x=>!x.disabled);const first=nodes[0],last=nodes[nodes.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.querySelector('.modal')){event.preventDefault();closeModal();}if(event.key==='Tab'&&document.querySelector('.modal')){const nodes=[...document.querySelectorAll('.modal button,.modal input,.modal select,.modal a[href]')].filter(x=>!x.disabled);const first=nodes[0],last=nodes[nodes.length-1];if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}}});
 window.addEventListener('hashchange',()=>{const name=location.hash.slice(1);if(NAMES[name]){role='customer';page=name;filter='all';render();}});
 const ACCOUNT_REFERENCE='https://account.fioboc.com/pages/019f1c51-f5f8-7dc4-8e57-62af21c9c1ad';
 const PROFILE_ICON='<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.15" aria-hidden="true"><circle cx="16" cy="16" r="13.8" opacity=".35"/><circle cx="16" cy="16" r="11.5"/><circle cx="16" cy="12" r="3.7"/><path d="M8.3 24c.8-4.9 14.6-4.9 15.4 0"/></svg>';
@@ -484,7 +484,7 @@ function cartProductPriceHTML(result){
  return `<div class="cart-line-price"><strong class="num" aria-label="${result.chosen.total<result.subtotal?'折后单价':'商品单价'}">${money(discountedUnit)}</strong>${result.chosen.total<result.subtotal?`<del class="num" aria-label="原单价">${money(originalUnit)}</del>`:''}</div>`;
 }
 function cartSummaryHTML(result){
- return `<aside class="summary cart-clean-summary"><div class="summary-line total"><strong>商品应付小计</strong><strong class="num">${money(result.chosen.total)}</strong></div><div class="cart-points" aria-live="polite"><span>预计可得积分 <button type="button" class="cart-membership-link" data-action="rewards-guide-open">查看会员制度</button></span><strong class="num">${number(result.points)} 积分</strong><p>${number(Math.floor(result.chosen.total))} × ${result.t.rate} = ${number(result.points)} 积分 · 发货或提货后 30 天可用</p></div><p class="cart-tax-note">税费和运费将在结账时计算。</p><button class="link cart-note-button" data-action="cart-note-toggle" aria-expanded="${cartNoteOpen}">订单备注</button>${cartNoteOpen?`<label class="cart-note-label" for="cart-note">备注内容</label><textarea id="cart-note" rows="2" placeholder="添加订单备注">${esc(cartNote)}</textarea>`:''}<button class="btn cart-view-button" data-action="checkout-open" ${state.qty<=0?'disabled':''}>去结账</button></aside>`;
+ return `<aside class="summary cart-clean-summary"><div class="summary-line total"><strong>商品应付小计</strong><strong class="num">${money(result.chosen.total)}</strong></div><div class="cart-points" aria-live="polite"><span>预计可得积分 <button type="button" class="cart-membership-link" data-action="cart-points-rules" aria-haspopup="dialog">查看积分制度</button></span><strong class="num">${number(result.points)} 积分</strong><p>${number(Math.floor(result.chosen.total))} × ${result.t.rate} = ${number(result.points)} 积分 · 发货或提货后 30 天可用</p></div><p class="cart-tax-note">税费和运费将在结账时计算。</p><button class="link cart-note-button" data-action="cart-note-toggle" aria-expanded="${cartNoteOpen}">订单备注</button>${cartNoteOpen?`<label class="cart-note-label" for="cart-note">备注内容</label><textarea id="cart-note" rows="2" placeholder="添加订单备注">${esc(cartNote)}</textarea>`:''}<button class="btn cart-view-button" data-action="checkout-open" ${state.qty<=0?'disabled':''}>去结账</button></aside>`;
 }
 function cartAllocatedLines(result){
  const lines=cartLineItems().map(line=>({line,result:{...result,quantity:line.quantity,subtotal:round(line.price*line.quantity),chosen:{...result.chosen,total:round(line.price*line.quantity)},discountItems:[]}}));
@@ -592,10 +592,10 @@ function productDetailPage(){
  const catalogDiscount=compareAtPrice>price
   ? `<del class="num">${money(compareAtPrice)}</del><span class="product-price-badge product-catalog-discount">−${Math.round((1-price/compareAtPrice)*100)}%</span>`
   : '';
- const memberDiscount=unit.t.base
-  ? `<span class="product-price-badge product-member-discount">${unit.t.name} 会员基础折扣 ${round(unit.t.base*100)}%${unit.chosen.id==='member'?'':' · 当前售价未使用'}</span>`
+ const memberPrice=unit.t.base
+  ? `<div class="product-main-price product-member-price"><strong class="num" aria-label="会员价 ${money(unit.base)}">${money(unit.base)}</strong><span class="product-price-badge product-member-discount">${unit.t.name} 会员基础折扣 ${round(unit.t.base*100)}%${unit.chosen.id==='member'?'':' · 当前售价未使用'}</span></div>`
   : '';
- return `<main class="product-detail-page" id="main-content"><nav class="product-breadcrumb" aria-label="商品导航"><button class="link" data-action="cart-back-collection">首页</button><span>›</span><span>长袖上衣</span><span>›</span><span>${HOODIE_PRODUCT.name}</span></nav><div class="product-detail-layout"><section class="product-gallery" aria-label="白色连帽衫商品图片">${HOODIE_PRODUCT.images.map((src,index)=>`<img src="${src}" alt="白色莫代尔混纺长袖连帽衫${['正面','背面','细节','近景'][index]}" ${index>1?'loading="lazy"':''}>`).join('')}</section><section class="product-purchase-panel"><p class="product-fabric-label">LENZING™ Modal</p><h1>${HOODIE_PRODUCT.name}</h1><p class="product-english-name">${HOODIE_PRODUCT.englishName}</p><div class="product-price-review"><div class="product-main-price product-current-price"><strong class="num">${money(price)}</strong>${catalogDiscount}${memberDiscount}</div><div class="product-main-price product-delivered-price"><strong class="num">${money(unit.chosen.total)}</strong>${unit.chosen.total<unit.subtotal?`<del>${money(unit.subtotal)}</del>`:''}</div><span class="product-review" aria-label="评分 5 分，25 条评论">★★★★★ <small>25 条评论</small></span></div><div class="product-options"><div class="product-color-heading"><strong>主色调：</strong><span>白色</span></div><span class="product-white-swatch" aria-label="已选白色"></span><div class="product-size-heading"><strong>尺码：${detail.size}</strong><button class="link" data-action="product-size-guide">尺码指南</button></div><div class="product-sizes" aria-label="选择尺码">${HOODIE_PRODUCT.sizes.map(size=>`<button data-action="product-size" data-id="${size}" class="${detail.size===size?'selected':''}" aria-pressed="${detail.size===size}">${size}</button>`).join('')}</div></div><div class="product-bundle-section"><h2>买越多，省越多</h2><div class="product-bundles" role="radiogroup" aria-label="选择购买件数">${[1,3,6,12].map(productBundleHTML).join('')}</div></div><div class="product-payable" aria-live="polite"><span>所选商品应付小计 · ${detail.quantity} 件</span><strong class="num">${money(result.chosen.total)}</strong></div><button class="btn product-add-to-cart" data-action="product-add-cart" ${canAdd?'':'disabled'}>添加到购物车</button>${canAdd?'':'<p class="product-limit-message">当前购物车最多容纳 24 件，请先调整购物车数量。</p>'}<section class="product-points-banner" aria-live="polite"><div><span>${state.joined?'预计可得积分':'加入会员后预计可得积分'}</span><strong class="num">${number(result.points)} 积分</strong></div><p>${number(Math.floor(result.chosen.total))} × ${result.t.rate} = ${number(result.points)} 积分</p><small>按当前所选商品单独结算估算，最终金额与积分以结账页为准。<br>发货后 30 天可用；不含税费、运费与礼品卡金额。</small></section><div class="product-information"><details><summary>商品特点</summary><p>柔软轻盈的莫代尔混纺面料，四向弹力；长袖连帽剪裁，侧开叉下摆。</p></details><details><summary>面料与护理</summary><p>42% 莫代尔、49% 聚酯纤维、9% 氨纶。冷水轻柔机洗，与相近颜色衣物同洗；勿漂白。</p></details><details><summary>配送与退货</summary><p>美国本土现货订单购买 3 件及以上可享标准免邮；配送升级服务可在结账页兑换使用。具体配送与退货条件以官网政策为准。</p><button class="link" data-action="product-source">查看官网商品与政策</button></details></div></section></div></main>`;
+ return `<main class="product-detail-page" id="main-content"><nav class="product-breadcrumb" aria-label="商品导航"><button class="link" data-action="cart-back-collection">首页</button><span>›</span><span>长袖上衣</span><span>›</span><span>${HOODIE_PRODUCT.name}</span></nav><div class="product-detail-layout"><section class="product-gallery" aria-label="白色连帽衫商品图片">${HOODIE_PRODUCT.images.map((src,index)=>`<img src="${src}" alt="白色莫代尔混纺长袖连帽衫${['正面','背面','细节','近景'][index]}" ${index>1?'loading="lazy"':''}>`).join('')}</section><section class="product-purchase-panel"><p class="product-fabric-label">LENZING™ Modal</p><h1>${HOODIE_PRODUCT.name}</h1><p class="product-english-name">${HOODIE_PRODUCT.englishName}</p><div class="product-price-review"><div class="product-current-price"><div class="product-main-price product-catalog-price"><strong class="num">${money(price)}</strong>${catalogDiscount}</div>${memberPrice}</div><div class="product-main-price product-delivered-price"><strong class="num">${money(unit.chosen.total)}</strong>${unit.chosen.total<unit.subtotal?`<del>${money(unit.subtotal)}</del>`:''}</div><span class="product-review" aria-label="评分 5 分，25 条评论">★★★★★ <small>25 条评论</small></span></div><div class="product-options"><div class="product-color-heading"><strong>主色调：</strong><span>白色</span></div><span class="product-white-swatch" aria-label="已选白色"></span><div class="product-size-heading"><strong>尺码：${detail.size}</strong><button class="link" data-action="product-size-guide">尺码指南</button></div><div class="product-sizes" aria-label="选择尺码">${HOODIE_PRODUCT.sizes.map(size=>`<button data-action="product-size" data-id="${size}" class="${detail.size===size?'selected':''}" aria-pressed="${detail.size===size}">${size}</button>`).join('')}</div></div><div class="product-bundle-section"><h2>买越多，省越多</h2><div class="product-bundles" role="radiogroup" aria-label="选择购买件数">${[1,3,6,12].map(productBundleHTML).join('')}</div></div><div class="product-payable" aria-live="polite"><span>所选商品应付小计 · ${detail.quantity} 件</span><strong class="num">${money(result.chosen.total)}</strong></div><button class="btn product-add-to-cart" data-action="product-add-cart" ${canAdd?'':'disabled'}>添加到购物车</button>${canAdd?'':'<p class="product-limit-message">当前购物车最多容纳 24 件，请先调整购物车数量。</p>'}<section class="product-points-banner" aria-live="polite"><div><span>${state.joined?'预计可得积分':'加入会员后预计可得积分'}</span><strong class="num">${number(result.points)} 积分</strong></div><p>${number(Math.floor(result.chosen.total))} × ${result.t.rate} = ${number(result.points)} 积分</p><small>按当前所选商品单独结算估算，最终金额与积分以结账页为准。<br>发货后 30 天可用；不含税费、运费与礼品卡金额。</small></section><div class="product-information"><details><summary>商品特点</summary><p>柔软轻盈的莫代尔混纺面料，四向弹力；长袖连帽剪裁，侧开叉下摆。</p></details><details><summary>面料与护理</summary><p>42% 莫代尔、49% 聚酯纤维、9% 氨纶。冷水轻柔机洗，与相近颜色衣物同洗；勿漂白。</p></details><details><summary>配送与退货</summary><p>美国本土现货订单购买 3 件及以上可享标准免邮；配送升级服务可在结账页兑换使用。具体配送与退货条件以官网政策为准。</p><button class="link" data-action="product-source">查看官网商品与政策</button></details></div></section></div></main>`;
 }
 function productDetailOpen(){role='storefront';page='checkout';cartView='product';cartOpen=false;render();document.getElementById('stage')?.scrollIntoView({block:'start'});}
 function productAddToCart(){
@@ -680,7 +680,7 @@ document.addEventListener('change',event=>{
  render();
 },true);
 document.addEventListener('keydown',event=>{
- if(role!=='storefront'||!cartOpen||document.getElementById('delivered-prototype').hidden||document.querySelector('.modal'))return;
+ if(event.defaultPrevented||role!=='storefront'||!cartOpen||document.getElementById('delivered-prototype').hidden||document.querySelector('.modal'))return;
  if(event.key==='Escape'){cartOpen=false;render();document.querySelector('.cart-entry')?.focus();}
  if(event.key==='Tab'){const items=[...document.querySelectorAll('.cart-drawer button:not([disabled]):not([aria-disabled="true"]),.cart-drawer input:not([disabled]),.cart-drawer select,.cart-drawer textarea')];const first=items[0],last=items.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&(!document.querySelector('.cart-drawer')?.contains(document.activeElement)||document.activeElement===last)){event.preventDefault();first?.focus();}}
 });
@@ -940,6 +940,20 @@ function rewardsGuideEarningDetails(kind){
  modal('购物赚积分',`<p>官网与 LA 门店购物，根据消费时的会员等级获得积分。</p><div class="detail">${TIERS.map(t=>`<div class="row between"><span>${t.name}</span><strong>每消费 $1 获得 ${t.rate} 分</strong></div>`).join('')}</div><p>先将商品应付小计向下取整，再乘以会员等级积分基数，乘积保留小数；不含税费、运费及礼品卡。购物积分在发货或提货后 30 天转为可用，获得后 12 个月到期。</p>`,[{text:'关闭',action:'close',secondary:true},{text:'去购物',action:'guide-shop-open'}]);
 }
 
+function cartPointsRules(){
+ const rates=TIERS.map(t=>`<div class="row between"><span>${t.name}</span><strong>每消费 $1 获得 ${t.rate} 积分</strong></div>`).join('');
+ modal('积分制度',`<div class="cart-points-policy">
+  <h3>如何获得积分</h3>
+  <p>首次注册、加入会员计划并完成邮箱验证可获 100 积分。购物积分按消费时的等级计算，未加入会员按 Member 等级计算。</p>
+  <div class="detail">${rates}</div>
+  <p>商品实付小计向下取整后乘以积分倍率，不含税费、运费和礼品卡金额。</p>
+  <h3>何时可以使用</h3>
+  <p>订单全部发货后满 30 天，购物积分转为可用。分批发货从最后一件商品发货起算。积分获得后 12 个月到期。</p>
+  <h3>如何使用积分</h3>
+  <p>可用积分可兑换优惠券等会员权益，例如 500 积分兑换满 $100 减 $5 的优惠券。</p>
+ </div>`,[{text:'关闭',action:'close'}]);
+}
+
 const rewardsGuideBaseRender=render;
 render=function(){
  if(role==='customer'&&page==='rewards-guide'){
@@ -951,15 +965,12 @@ render=function(){
 };
 document.addEventListener('click',event=>{
  const button=event.target.closest('button');if(!button||button.disabled)return;const action=button.dataset.action;
- if(!['rewards-guide-open','guide-section','guide-member-home','guide-join','guide-login','guide-profile','guide-redeem','guide-earn-signup','guide-earn-shopping','guide-shop-open'].includes(action))return;
+ if(!['cart-points-rules','rewards-guide-open','guide-section','guide-member-home','guide-join','guide-login','guide-profile','guide-redeem','guide-earn-signup','guide-earn-shopping','guide-shop-open'].includes(action))return;
  event.preventDefault();event.stopImmediatePropagation();
- if(action==='rewards-guide-open'){
+ if(action==='cart-points-rules'){button.focus({preventScroll:true});cartPointsRules();}
+ else if(action==='rewards-guide-open'){
   role='customer';page='rewards-guide';closeModal();render();
-  const main=document.getElementById('main-content');
-  if(button.classList.contains('cart-membership-link')){
-   window.scrollTo(0,0);
-   if(main){main.tabIndex=-1;main.focus({preventScroll:true});}
-  }else main?.scrollIntoView({block:'start'});
+  document.getElementById('main-content')?.scrollIntoView({block:'start'});
  }
  else if(action==='guide-section')document.getElementById(button.dataset.id)?.scrollIntoView({behavior:'smooth',block:'start'});
  else if(action==='guide-earn-signup')rewardsGuideEarningDetails('signup');
@@ -1036,10 +1047,14 @@ document.addEventListener('click',event=>{
    if(document.body.dataset.currentSurface!=='member'){
     if(page==='rewards-guide')return {title:'V1.1.0 · 会员制度介绍',regions:found};
     if(role==='storefront'&&cartView==='product'&&!cartOpen){
-     add('.product-member-discount','商品价格旁的会员基础折扣','优惠价与划线原价沿用原有样式，商品折扣与会员基础折扣以两个独立标签并排展示。','新增');
+     add('.product-member-price','第二行的会员价与基础折扣','第一行展示商品优惠价、划线原价与商品折扣；第二行展示会员价及会员基础折扣标签。','新增');
      return {title:'V1.1.0 · 商品详情页',regions:found,empty:'当前账号没有可展示的会员基础折扣。'};
     }
-    add('.cart-membership-link','预计积分旁的会员制度入口','点击「查看会员制度」打开会员制度介绍页。','新增');
+    if(document.querySelector('.cart-points-policy')){
+     add('.cart-points-policy','积分制度弹窗','查看积分获得、可用时间与兑换规则。关闭后回到购物车。','新增');
+     return {title:'V1.1.0 · 积分制度弹窗',regions:found};
+    }
+    add('.cart-membership-link','预计积分旁的积分制度入口','点击「查看积分制度」在购物车内打开弹窗。','新增');
     return {title:'V1.1.0 · 官网购物车',regions:found,empty:'打开购物车后查看预计积分旁的入口。'};
    }
    return {
