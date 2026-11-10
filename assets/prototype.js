@@ -131,19 +131,28 @@
     document.querySelector('.cart-drawer-heading .cart-close')?.focus({preventScroll: true});
   });
 
+  function creditedOrderPoints(order) {
+    return order.creditedPoints ?? state.ledger?.find(entry =>
+      entry.reference === order.id && entry.label?.endsWith(' · 积分转可用')
+    )?.amount;
+  }
+
   function renderOrderDetail() {
     const order = previewOrders.find(entry => entry.id === orderScenario.value);
     const details = order.checkoutDetails;
     const canceled = order.status === 'canceled';
-    const status = canceled ? 'Canceled' : order.fulfilled ? 'Shipped' : 'Confirmed';
+    const credited = creditedOrderPoints(order);
+    const isCredited = Number.isFinite(credited);
+    const shipped = order.fulfilled || details.availableDay != null || isCredited;
+    const status = canceled ? 'Canceled' : shipped ? 'Shipped' : 'Confirmed';
     const currency = details.currency || 'USD';
     const formatMoney = new Intl.NumberFormat('en-US', {style:'currency', currency}).format;
     const shipping = typeof details.shipping === 'number' ? details.shipping : details.shipping === '免费' ? 0 : null;
     const total = shipping === null ? null : round(details.subtotal + shipping);
     const dateLabel = order.dateLabel || new Intl.DateTimeFormat('en-US', {month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(date(order.paid)));
-    const estimate = order.earned ?? details.earned;
-    const pointsRow = !canceled && Number.isFinite(estimate)
-      ? `<div class="order-detail-points"><dt>Estimated points</dt><dd><strong class="num">${number(estimate)} points</strong></dd></div>`
+    const points = isCredited ? credited : order.earned ?? details.earned;
+    const pointsRow = !canceled && Number.isFinite(points)
+      ? `<div class="order-detail-points"><dt>${isCredited ? 'Points credited' : 'Estimated points'}</dt><dd><strong class="num">${number(points)} points</strong></dd></div>`
       : '';
     orderDetail.innerHTML = `
       <header class="return-member-shell order-detail-header"><strong>FIOBOC</strong></header>
@@ -156,7 +165,7 @@
           <header class="order-detail-heading"><h1>Order ${esc(order.id)}</h1><p>${status} · ${esc(dateLabel)}</p></header>
           <section class="order-detail-card order-detail-status" aria-label="Order status">
             <h2>${status}</h2>
-            <p>${canceled ? 'This order has been canceled.' : order.fulfilled ? 'Your items have shipped.' : "We're preparing these items for shipping."}</p>
+            <p>${canceled ? 'This order has been canceled.' : shipped ? 'Your items have shipped.' : "We're preparing these items for shipping."}</p>
           </section>
           <section class="order-detail-card" aria-label="Order summary">
             <div class="order-detail-items">${details.items.map(({line,result}) => `
@@ -196,10 +205,16 @@
       }
     };
     const previous = orderScenario.value;
-    previewOrders = [confirmed, {...confirmed,id:'DEMO-26094',status:'canceled'},
-      ...state.orders.filter(order => order.checkoutDetails)];
+    previewOrders = [
+      confirmed,
+      {...confirmed,id:'DEMO-26094',status:'canceled'},
+      {...confirmed,id:'DEMO-26095',fulfilled:true,dateLabel:'Oct 5',creditedPoints:17},
+      ...state.orders.filter(order => order.checkoutDetails)
+    ];
     orderScenario.innerHTML = previewOrders.map(order => {
-      const label = order.status === 'canceled' ? '已取消' : order.fulfilled ? '已发货' : '已确认';
+      const label = order.status === 'canceled' ? '已取消'
+        : Number.isFinite(creditedOrderPoints(order)) ? '积分已入账'
+        : order.fulfilled || order.checkoutDetails.availableDay != null ? '已发货' : '已确认';
       return `<option value="${esc(order.id)}">${esc(order.id)} · ${label}</option>`;
     }).join('');
     orderScenario.value = previewOrders.some(order => order.id === previous) ? previous : confirmed.id;

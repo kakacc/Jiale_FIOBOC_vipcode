@@ -1041,7 +1041,7 @@ document.addEventListener('click',event=>{
   };
   if(document.body.dataset.projectVersion==='1.1.0'){
    if(document.body.dataset.currentSurface==='order'){
-    add('.order-detail-points','Total 下方的预计可得积分','展示本单预计可得积分，订单已取消时隐藏整行。','新增');
+    add('.order-detail-points','Total 下方的订单积分','待入账时显示预计可得积分，入账后显示实际入账积分；已取消订单隐藏整行。','新增');
     return {title:'V1.1.0 · 订单详情页',regions:found,empty:'已取消的订单不显示预计可得积分。'};
    }
    if(document.body.dataset.currentSurface!=='member'){
