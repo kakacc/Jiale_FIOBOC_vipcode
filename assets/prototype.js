@@ -11,6 +11,7 @@
   const orderDetail = document.getElementById('current-order-detail');
   const orderControls = document.getElementById('current-order-controls');
   const orderScenario = document.getElementById('current-order-scenario');
+  const demoScenario = document.getElementById('current-demo-scenario');
   let previewOrders = [];
 
   const returnDialog = document.getElementById('return-dialog');
@@ -98,6 +99,7 @@
     document.body.dataset.projectVersion = version;
     document.body.dataset.currentSurface = surface;
     selector.value = version;
+    demoScenario.value = '';
     current.hidden = !(showMember || showOrder);
     delivered.hidden = showMember || showOrder;
     memberContent.hidden = !showMember;
@@ -192,7 +194,7 @@
       </div>`;
   }
 
-  function openOrderDetail() {
+  function openOrderDetail(orderId = orderScenario.value) {
     const confirmed = {
       id:'DEMO-26093',status:'paid',dateLabel:'Nov 6',
       checkoutDetails:{
@@ -204,7 +206,6 @@
         }]
       }
     };
-    const previous = orderScenario.value;
     previewOrders = [
       confirmed,
       {...confirmed,id:'DEMO-26094',status:'canceled'},
@@ -217,15 +218,41 @@
         : order.fulfilled || order.checkoutDetails.availableDay != null ? '已发货' : '已确认';
       return `<option value="${esc(order.id)}">${esc(order.id)} · ${label}</option>`;
     }).join('');
-    orderScenario.value = previewOrders.some(order => order.id === previous) ? previous : confirmed.id;
+    orderScenario.value = previewOrders.some(order => order.id === orderId) ? orderId : confirmed.id;
     closeModal();
     showVersion('1.1.0', 'order');
     renderOrderDetail();
     window.scrollTo(0, 0);
   }
 
-  orderTab.addEventListener('click', openOrderDetail);
-  document.getElementById('current-member-orders').addEventListener('click', openOrderDetail);
+  function loadDemoAccount(which) {
+    scenario = which;
+    init(which);
+    document.getElementById('scenario').value = which;
+  }
+
+  demoScenario.addEventListener('change', () => {
+    const selected = demoScenario.value;
+    if (!selected) return;
+    if (selected === 'member-return') {
+      memberTab.click();
+      document.getElementById('return-rewards-available').click();
+      document.getElementById('return-details').click();
+    } else if (selected === 'product-vip2' || selected === 'product-guest') {
+      loadDemoAccount(selected === 'product-guest' ? 'new' : 'vip2');
+      productTab.click();
+    } else if (selected === 'cart-rules') {
+      if (!state.qty) loadDemoAccount('vip2');
+      cartTab.click();
+      document.querySelector('.cart-drawer [data-action="cart-points-rules"]')?.click();
+    } else {
+      openOrderDetail(selected);
+    }
+    demoScenario.value = selected;
+  });
+
+  orderTab.addEventListener('click', () => openOrderDetail());
+  document.getElementById('current-member-orders').addEventListener('click', () => openOrderDetail());
   orderScenario.addEventListener('change', renderOrderDetail);
   orderDetail.addEventListener('click', event => {
     if (event.target.closest('[data-order-member]')) memberTab.click();
@@ -233,6 +260,7 @@
 
   selector.addEventListener('change', () => {
     showVersion(selector.value);
+    if (selector.value === '1.0.0') render();
     window.scrollTo(0, 0);
   });
 

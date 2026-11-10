@@ -13,6 +13,29 @@
       <option value="1.1.0" selected>V1.1.0 （当前版本）</option>
       <option value="1.0.0">V1.0.0 （2026-11-04已交付）</option>
     </select>
+  </div>
+  <div class="current-review-tools">
+    <label class="current-demo-controls" for="current-demo-scenario">
+      演示场景
+      <select id="current-demo-scenario">
+        <option value="">选择演示场景</option>
+        <optgroup label="Member Center">
+          <option value="member-return">Free US returns · 使用退货券</option>
+        </optgroup>
+        <optgroup label="商品详情页">
+          <option value="product-vip2">VIP2 已登录 · 会员基础折扣</option>
+          <option value="product-guest">未登录 · 立即加入会员</option>
+        </optgroup>
+        <optgroup label="官网购物车">
+          <option value="cart-rules">购物车 · 查看积分制度</option>
+        </optgroup>
+        <optgroup label="订单详情页">
+          <option value="DEMO-26093">订单积分 · 待入账</option>
+          <option value="DEMO-26095">订单积分 · 已入账</option>
+          <option value="DEMO-26094">已取消订单 · 隐藏积分</option>
+        </optgroup>
+      </select>
+    </label>
     <nav class="current-prototype-nav" aria-label="V1.1.0 原型页面">
       <button type="button" id="current-member-tab" aria-pressed="true">Member Center</button>
       <button type="button" id="current-product-tab" aria-pressed="false">商品详情页</button>
@@ -23,8 +46,8 @@
       预览订单
       <select id="current-order-scenario"></select>
     </label>
+    <button type="button" id="review-changes-toggle" class="review-changes-toggle" aria-pressed="false" aria-controls="review-changes-summary">查看需调整的区域</button>
   </div>
-  <button type="button" id="review-changes-toggle" class="review-changes-toggle" aria-pressed="false" aria-controls="review-changes-summary">查看需调整的区域</button>
 </header>
 <main id="current-prototype" aria-label="V1.1.0 原型">
   <div class="return-member" id="current-member-content" lang="en">
