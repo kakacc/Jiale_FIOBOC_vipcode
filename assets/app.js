@@ -1109,7 +1109,7 @@ document.addEventListener('click',event=>{
     regions:[{
      element:document.getElementById('return-use'),
      title:'Free US returns 弹窗中的 Use 按钮',
-     note:'将 Continue shopping 改为 Use，点击后打开写信窗口，收件人为 service@fioboc.com。',
+     note:'点击 Use 打开写信窗口，收件人为 service@fioboc.com，预填免费退货申请、当前券码及订单编号占位。',
      kind:'调整',
      reveal:()=>document.getElementById('return-details').click()
     }]

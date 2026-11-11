@@ -9,15 +9,16 @@
   const orderTab = document.getElementById('current-order-tab');
   const memberContent = document.getElementById('current-member-content');
   const orderDetail = document.getElementById('current-order-detail');
-  const orderControls = document.getElementById('current-order-controls');
-  const orderScenario = document.getElementById('current-order-scenario');
   const demoScenario = document.getElementById('current-demo-scenario');
-  let previewOrders = [];
+  let activeOrderId;
 
   const returnDialog = document.getElementById('return-dialog');
   const returnCoupon = document.getElementById('return-coupon');
   const returnComposer = document.getElementById('return-composer');
   const returnUse = document.getElementById('return-use');
+  const returnCode = document.getElementById('return-code-value');
+  const returnMailSubject = document.getElementById('return-mail-subject');
+  const returnMailBody = document.getElementById('return-mail-body');
   const returnCopyStatus = document.getElementById('return-copy-status');
 
   function showReturnComposer(open) {
@@ -25,8 +26,21 @@
     returnComposer.hidden = !open;
     returnDialog.classList.toggle('is-composing', open);
     returnDialog.setAttribute('aria-labelledby', open ? 'return-composer' : 'return-coupon-title');
-    if (open) document.getElementById('return-mail-body').focus();
-    else returnUse.focus();
+    if (open) {
+      const orderPlaceholder = '[Enter your order number]';
+      returnMailSubject.value = 'Free US Return Request';
+      returnMailBody.value = `Hi FIOBOC Customer Service,
+
+I'd like to use my Free US returns coupon to request a return for the order below.
+
+Order number: ${orderPlaceholder}
+Coupon code: ${returnCode.textContent.trim()}`;
+      const orderStart = returnMailBody.value.indexOf(orderPlaceholder);
+      returnMailBody.focus();
+      returnMailBody.setSelectionRange(orderStart, orderStart + orderPlaceholder.length);
+    } else {
+      returnUse.focus();
+    }
   }
 
   document.getElementById('return-details').addEventListener('click', () => {
@@ -77,7 +91,7 @@
   }
 
   document.getElementById('return-copy-code').addEventListener('click', async () => {
-    returnCopyStatus.textContent = await copyRewardCode(document.getElementById('return-code-value'));
+    returnCopyStatus.textContent = await copyRewardCode(returnCode);
   });
 
   current.querySelectorAll('[data-return-copy]').forEach(button => {
@@ -103,7 +117,7 @@
     current.hidden = !(showMember || showOrder);
     delivered.hidden = showMember || showOrder;
     memberContent.hidden = !showMember;
-    orderDetail.hidden = orderControls.hidden = !showOrder;
+    orderDetail.hidden = !showOrder;
     orderTab.setAttribute('aria-pressed', String(showOrder));
     memberTab.setAttribute('aria-pressed', String(showMember));
     productTab.setAttribute('aria-pressed', String(version === '1.1.0' && surface === 'product'));
@@ -139,8 +153,7 @@
     )?.amount;
   }
 
-  function renderOrderDetail() {
-    const order = previewOrders.find(entry => entry.id === orderScenario.value);
+  function renderOrderDetail(order) {
     const details = order.checkoutDetails;
     const canceled = order.status === 'canceled';
     const credited = creditedOrderPoints(order);
@@ -194,7 +207,7 @@
       </div>`;
   }
 
-  function openOrderDetail(orderId = orderScenario.value) {
+  function openOrderDetail(orderId = activeOrderId) {
     const confirmed = {
       id:'DEMO-26093',status:'paid',dateLabel:'Nov 6',
       checkoutDetails:{
@@ -206,22 +219,16 @@
         }]
       }
     };
-    previewOrders = [
+    const demoOrders = [
       confirmed,
       {...confirmed,id:'DEMO-26094',status:'canceled'},
-      {...confirmed,id:'DEMO-26095',fulfilled:true,dateLabel:'Oct 5',creditedPoints:17},
-      ...state.orders.filter(order => order.checkoutDetails)
+      {...confirmed,id:'DEMO-26095',fulfilled:true,dateLabel:'Oct 5',creditedPoints:17}
     ];
-    orderScenario.innerHTML = previewOrders.map(order => {
-      const label = order.status === 'canceled' ? '已取消'
-        : Number.isFinite(creditedOrderPoints(order)) ? '积分已入账'
-        : order.fulfilled || order.checkoutDetails.availableDay != null ? '已发货' : '已确认';
-      return `<option value="${esc(order.id)}">${esc(order.id)} · ${label}</option>`;
-    }).join('');
-    orderScenario.value = previewOrders.some(order => order.id === orderId) ? orderId : confirmed.id;
+    const order = demoOrders.find(entry => entry.id === orderId) ?? confirmed;
+    activeOrderId = order.id;
     closeModal();
     showVersion('1.1.0', 'order');
-    renderOrderDetail();
+    renderOrderDetail(order);
     window.scrollTo(0, 0);
   }
 
@@ -253,7 +260,6 @@
 
   orderTab.addEventListener('click', () => openOrderDetail());
   document.getElementById('current-member-orders').addEventListener('click', () => openOrderDetail());
-  orderScenario.addEventListener('change', renderOrderDetail);
   orderDetail.addEventListener('click', event => {
     if (event.target.closest('[data-order-member]')) memberTab.click();
   });

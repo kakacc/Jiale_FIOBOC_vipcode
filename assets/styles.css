@@ -592,16 +592,13 @@ body[data-project-version="1.1.0"] .current-review-tools {
   padding-top: 8px;
   border-top: 1px solid #dfdfdf;
 }
-.current-demo-controls,
-.current-order-controls {
+.current-demo-controls {
   display: flex;
   align-items: center;
   gap: 6px;
   font-size: 13px;
 }
-.current-order-controls[hidden] { display: none; }
-.current-demo-controls select,
-.current-order-controls select {
+.current-demo-controls select {
   max-width: min(230px, 65vw);
   padding: 5px 7px;
   border: 1px solid #ccc;

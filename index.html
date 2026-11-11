@@ -42,10 +42,6 @@
       <button type="button" id="current-cart-tab" aria-pressed="false">官网购物车</button>
       <button type="button" id="current-order-tab" aria-pressed="false">订单详情页</button>
     </nav>
-    <label class="current-order-controls" id="current-order-controls" hidden>
-      预览订单
-      <select id="current-order-scenario"></select>
-    </label>
     <button type="button" id="review-changes-toggle" class="review-changes-toggle" aria-pressed="false" aria-controls="review-changes-summary">查看需调整的区域</button>
   </div>
 </header>
@@ -225,9 +221,9 @@
           <span>收件人：</span><strong class="return-mail-recipient">service@fioboc.com</strong>
         </div>
         <label class="return-mail-field"><span>抄送：</span><input type="text" autocomplete="off"></label>
-        <label class="return-mail-field"><span>主题：</span><input type="text" autocomplete="off"></label>
+        <label class="return-mail-field"><span>主题：</span><input type="text" id="return-mail-subject" lang="en" autocomplete="off"></label>
       </div>
-      <textarea id="return-mail-body" aria-label="邮件正文" spellcheck="false"></textarea>
+      <textarea id="return-mail-body" lang="en" aria-label="邮件正文" spellcheck="false"></textarea>
     </section>
   </dialog>
 </main>
