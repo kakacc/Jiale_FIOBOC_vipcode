@@ -153,6 +153,28 @@ Coupon code: ${returnCode.textContent.trim()}`;
     )?.amount;
   }
 
+  function orderItemPoints(items, total, isCredited) {
+    const field = isCredited ? 'creditedPoints' : 'earned';
+    if (items.every(item => Number.isFinite(item[field]))) {
+      return items.map(item => item[field]);
+    }
+    if (!Number.isFinite(total)) return items.map(() => null);
+    if (total === 0) return items.map(() => 0);
+
+    // Older order snapshots only contain an order-level points balance.
+    const amounts = items.map(item => Math.max(0, item.result.chosen.total));
+    const subtotal = amounts.reduce((sum, amount) => sum + amount, 0);
+    if (!subtotal) return items.map(() => null);
+    const allocations = amounts.map((amount, index) => {
+      const exact = Math.floor(total) * amount / subtotal;
+      return {index, points: Math.floor(exact), remainder: exact - Math.floor(exact)};
+    });
+    const remaining = Math.floor(total) - allocations.reduce((sum, item) => sum + item.points, 0);
+    const ranked = [...allocations].sort((a, b) => b.remainder - a.remainder || a.index - b.index);
+    for (const item of ranked.slice(0, remaining)) item.points++;
+    return allocations.map(item => item.points);
+  }
+
   function renderOrderDetail(order) {
     const details = order.checkoutDetails;
     const canceled = order.status === 'canceled';
@@ -165,10 +187,9 @@ Coupon code: ${returnCode.textContent.trim()}`;
     const shipping = typeof details.shipping === 'number' ? details.shipping : details.shipping === '免费' ? 0 : null;
     const total = shipping === null ? null : round(details.subtotal + shipping);
     const dateLabel = order.dateLabel || new Intl.DateTimeFormat('en-US', {month:'short',day:'numeric',timeZone:'UTC'}).format(new Date(date(order.paid)));
-    const points = isCredited ? credited : order.earned ?? details.earned;
-    const pointsRow = !canceled && Number.isFinite(points)
-      ? `<div class="order-detail-points"><dt>${isCredited ? 'Points credited' : 'Estimated points'}</dt><dd><strong class="num">${number(points)} points</strong></dd></div>`
-      : '';
+    const estimatedItemPoints = orderItemPoints(details.items, order.earned ?? details.earned, false);
+    const creditedItemPoints = orderItemPoints(details.items, credited, true);
+    const hasItemCredits = details.items.some(item => Number.isFinite(item.creditedPoints));
     orderDetail.innerHTML = `
       <header class="return-member-shell order-detail-header"><strong>FIOBOC</strong></header>
       <div class="return-member-shell order-detail-layout">
@@ -183,19 +204,24 @@ Coupon code: ${returnCode.textContent.trim()}`;
             <p>${canceled ? 'This order has been canceled.' : shipped ? 'Your items have shipped.' : "We're preparing these items for shipping."}</p>
           </section>
           <section class="order-detail-card" aria-label="Order summary">
-            <div class="order-detail-items">${details.items.map(({line,result}) => `
-              <div class="order-detail-item">
+            <div class="order-detail-items">${details.items.map((item, index) => {
+              const {line, result} = item;
+              const itemCanceled = canceled || item.status === 'canceled';
+              const itemIsCredited = Number.isFinite(item.creditedPoints) || (isCredited && !hasItemCredits);
+              const points = itemIsCredited ? item.creditedPoints ?? creditedItemPoints[index] : estimatedItemPoints[index];
+              return `<div class="order-detail-item">
                 <img src="${esc(line.image)}" alt="">
                 <div class="order-detail-item-name">${esc(line.englishName || line.name)}
-                  <small>${esc([line.color,line.size].filter(Boolean).join(' / '))} · Qty ${number(line.quantity)}</small>
+                  <small>${esc([line.color,line.size].filter(Boolean).join(' / '))} · Qty ${number(line.quantity)}${itemCanceled ? ' · Canceled' : ''}</small>
+                  ${!itemCanceled && Number.isFinite(points) ? `<div class="order-detail-points"><span>${itemIsCredited ? 'Points credited' : 'Estimated points'}</span><strong class="num">${number(points)} points</strong></div>` : ''}
                 </div>
                 <span class="num">${formatMoney(result.chosen.total)}</span>
-              </div>`).join('')}</div>
+              </div>`;
+            }).join('')}</div>
             <dl class="order-detail-totals">
               <div><dt>Subtotal</dt><dd class="num">${formatMoney(details.subtotal)}</dd></div>
               <div><dt>Shipping</dt><dd class="num">${shipping === null ? 'Pending' : formatMoney(shipping)}</dd></div>
               <div class="order-detail-total"><dt>Total</dt><dd class="num">${total === null ? 'Pending' : `<small>${esc(currency)}</small>${formatMoney(total)}`}</dd></div>
-              ${pointsRow}
             </dl>
           </section>
           <section class="order-detail-card order-detail-contact" aria-label="Order information">
@@ -211,18 +237,28 @@ Coupon code: ${returnCode.textContent.trim()}`;
     const confirmed = {
       id:'DEMO-26093',status:'paid',dateLabel:'Nov 6',
       checkoutDetails:{
-        currency:'EUR',subtotal:17.95,shipping:1.95,earned:17,
+        currency:'EUR',subtotal:42.90,shipping:1.95,earned:41,
         contact:{email:'alex@example.com',firstName:'Alex',lastName:'Morgan',street:'12 Demo Street',city:'Paris',postal:'75001'},
         items:[{
           line:{englishName:'Airforce 3D Embroidered Oversized Tee',color:'White',size:'S',quantity:1,image:CART_INLINE_IMAGES['hoodie-white']},
-          result:{chosen:{total:17.95}}
+          result:{chosen:{total:17.95}},earned:17
+        },{
+          line:{englishName:'Weekend Performance Essential Polo Tee',color:'White',size:'M',quantity:1,image:CART_INLINE_IMAGES['polo-white']},
+          result:{chosen:{total:24.95}},earned:24
         }]
       }
     };
     const demoOrders = [
       confirmed,
       {...confirmed,id:'DEMO-26094',status:'canceled'},
-      {...confirmed,id:'DEMO-26095',fulfilled:true,dateLabel:'Oct 5',creditedPoints:17}
+      {...confirmed,id:'DEMO-26095',fulfilled:true,dateLabel:'Oct 5',creditedPoints:41,
+        checkoutDetails:{...confirmed.checkoutDetails,items:confirmed.checkoutDetails.items.map(item => ({...item,creditedPoints:item.earned}))}},
+      {...confirmed,id:'DEMO-26096',fulfilled:true,
+        checkoutDetails:{...confirmed.checkoutDetails,items:confirmed.checkoutDetails.items.map((item, index) =>
+          index === 0 ? {...item,creditedPoints:item.earned} : {...item})}},
+      {...confirmed,id:'DEMO-26097',
+        checkoutDetails:{...confirmed.checkoutDetails,items:confirmed.checkoutDetails.items.map((item, index) =>
+          index === 0 ? {...item,status:'canceled'} : {...item})}}
     ];
     const order = demoOrders.find(entry => entry.id === orderId) ?? confirmed;
     activeOrderId = order.id;

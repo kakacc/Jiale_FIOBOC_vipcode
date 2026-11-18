@@ -1086,8 +1086,8 @@ document.addEventListener('click',event=>{
   };
   if(document.body.dataset.projectVersion==='1.1.0'){
    if(document.body.dataset.currentSurface==='order'){
-    add('.order-detail-points','Total 下方的订单积分','待入账时显示预计可得积分，入账后显示实际入账积分；已取消订单隐藏整行。','新增');
-    return {title:'V1.1.0 · 订单详情页',regions:found,empty:'已取消的订单不显示预计可得积分。'};
+    add('.order-detail-item .order-detail-points','每个商品下方的积分','按商品独立显示积分状态，同一订单可同时包含已入账与待入账商品；已取消商品隐藏积分。','调整');
+    return {title:'V1.1.0 · 订单详情页',regions:found,empty:'已取消的商品不显示积分。'};
    }
    if(document.body.dataset.currentSurface!=='member'){
     if(page==='rewards-guide')return {title:'V1.1.0 · 会员制度介绍',regions:found};

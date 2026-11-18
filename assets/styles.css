@@ -656,7 +656,15 @@ body[data-project-version="1.1.0"] .current-review-tools {
 .order-detail-totals dd { margin: 0; text-align: right; }
 .order-detail-totals .order-detail-total { margin-top: 14px; font-size: 19px; font-weight: 700; }
 .order-detail-total small { margin-right: 6px; color: #666; font-size: 11px; font-weight: 500; }
-.order-detail-totals .order-detail-points { padding-top: 3px; color: #087785; font-size: 14px; }
+.order-detail-item .order-detail-points {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin-top: 6px;
+  color: #087785;
+  font-size: 13px;
+}
 .order-detail-contact { display: grid; gap: 12px; overflow-wrap: anywhere; }
 .order-detail-contact div { display: grid; grid-template-columns: minmax(70px, 18%) 1fr; gap: 10px; }
 .order-detail-contact span { color: #666; }
