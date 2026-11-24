@@ -7,8 +7,10 @@
   const productTab = document.getElementById('current-product-tab');
   const cartTab = document.getElementById('current-cart-tab');
   const orderTab = document.getElementById('current-order-tab');
+  const thankYouTab = document.getElementById('current-thank-you-tab');
   const memberContent = document.getElementById('current-member-content');
   const orderDetail = document.getElementById('current-order-detail');
+  const thankYouContent = document.getElementById('current-thank-you');
   const demoScenario = document.getElementById('current-demo-scenario');
   let activeOrderId;
 
@@ -106,6 +108,7 @@ Coupon code: ${returnCode.textContent.trim()}`;
   function showVersion(version, surface = 'member') {
     const showMember = version === '1.1.0' && surface === 'member';
     const showOrder = version === '1.1.0' && surface === 'order';
+    const showThankYou = version === '1.1.0' && surface === 'thankyou';
     if (!showMember) {
       if (returnDialog.open) returnDialog.close();
       if (discountDialog.open) discountDialog.close();
@@ -114,10 +117,12 @@ Coupon code: ${returnCode.textContent.trim()}`;
     document.body.dataset.currentSurface = surface;
     selector.value = version;
     demoScenario.value = '';
-    current.hidden = !(showMember || showOrder);
-    delivered.hidden = showMember || showOrder;
+    current.hidden = !(showMember || showOrder || showThankYou);
+    delivered.hidden = showMember || showOrder || showThankYou;
     memberContent.hidden = !showMember;
     orderDetail.hidden = !showOrder;
+    thankYouContent.hidden = !showThankYou;
+    thankYouTab.setAttribute('aria-pressed', String(showThankYou));
     orderTab.setAttribute('aria-pressed', String(showOrder));
     memberTab.setAttribute('aria-pressed', String(showMember));
     productTab.setAttribute('aria-pressed', String(version === '1.1.0' && surface === 'product'));
@@ -145,6 +150,13 @@ Coupon code: ${returnCode.textContent.trim()}`;
     render();
     window.scrollTo(0, 0);
     document.querySelector('.cart-drawer-heading .cart-close')?.focus({preventScroll: true});
+  });
+
+  thankYouTab.addEventListener('click', () => {
+    closeModal();
+    showVersion('1.1.0', 'thankyou');
+    window.fiobocRenderThankYou?.();
+    window.scrollTo(0, 0);
   });
 
   function creditedOrderPoints(order) {
@@ -288,6 +300,9 @@ Coupon code: ${returnCode.textContent.trim()}`;
       if (!state.qty) loadDemoAccount('vip2');
       cartTab.click();
       document.querySelector('.cart-drawer [data-action="cart-points-rules"]')?.click();
+    } else if (selected.startsWith('thankyou-')) {
+      thankYouTab.click();
+      window.fiobocSetThankYouScenario?.(selected.slice(9));
     } else {
       openOrderDetail(selected);
     }

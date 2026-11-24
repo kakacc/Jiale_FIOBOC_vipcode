@@ -1085,6 +1085,10 @@ document.addEventListener('click',event=>{
    }
   };
   if(document.body.dataset.projectVersion==='1.1.0'){
+   if(document.body.dataset.currentSurface==='thankyou'){
+    add('#current-thank-you .v110-rewards','结账感谢页 · Fioboc Rewards','沿用参考图2：预计本单积分、全部发货30天后入账、当前会员等级与基础折扣、已入账消费进度及会员中心入口。非会员主动加入；待入账金额不进入进度条。','新增');
+    return {title:'V1.1.0 · 结账感谢页',regions:found};
+   }
    if(document.body.dataset.currentSurface==='order'){
     add('.order-detail-item .order-detail-points','每个商品下方的积分','按商品独立显示积分状态，同一订单可同时包含已入账与待入账商品；已取消商品隐藏积分。','调整');
     return {title:'V1.1.0 · 订单详情页',regions:found,empty:'已取消的商品不显示积分。'};

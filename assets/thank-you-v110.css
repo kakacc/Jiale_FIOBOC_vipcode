@@ -1,0 +1,226 @@
+/* V1.1.0 Thank You: intentionally scoped; the delivered V1.0.0 stays intact. */
+#current-thank-you { color: #111; background: #fff; font: 16px/1.5 Arial, Helvetica, sans-serif; }
+#current-thank-you[hidden] { display: none; }
+#current-thank-you button, #current-thank-you input { font: inherit; }
+#current-thank-you h1, #current-thank-you h2, #current-thank-you h3, #current-thank-you p { margin: 0; }
+#current-thank-you button:focus-visible, #current-thank-you summary:focus-visible { outline: 3px solid #667cac; outline-offset: 4px; }
+.v110-ty-header { border-bottom: 1px solid #dedede; padding: 25px 0; }
+.v110-ty-shell { width: calc(100% - 80px); max-width: 1312px; margin-inline: auto; }
+.v110-ty-header .v110-ty-shell { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.v110-ty-brand { display: block; width: 137px; height: auto; }
+.v110-ty-help { display: flex; align-items: center; gap: 28px; font-size: 13px; }
+.v110-ty-help span, .v110-ty-help button { display: inline-flex; align-items: center; gap: 7px; }
+.v110-ty-help button { background: none; padding: 0; color: #24272c; }
+.v110-ty-help svg { width: 16px; height: 16px; }
+.v110-ty-background { background: linear-gradient(to right, #fff 0%, #fff 55%, #f1f1f1 55%, #f1f1f1 100%); }
+.v110-ty-layout { display: grid; grid-template-columns: 55% 45%; align-items: start; }
+.v110-ty-main { padding: 46px 44px 32px 0; min-width: 0; }
+.v110-ty-heading { display: flex; align-items: center; gap: 17px; margin-bottom: 34px; }
+.v110-ty-heading > svg { width: 57px; height: 57px; flex-shrink: 0; color: #111; }
+.v110-ty-heading h1 { font-size: 26px; line-height: 1.25; letter-spacing: -.7px; }
+.v110-ty-heading p { font-size: 16px; color: #626262; margin-top: 5px !important; }
+.v110-ty-card { padding: 20px; border: 1px solid #ddd; border-radius: 15px; margin-bottom: 18px; background: #fff; }
+.v110-ty-card > h2 { font-size: 20px; line-height: 1.4; margin-bottom: 14px !important; letter-spacing: -.3px; }
+.v110-ty-confirmation p { margin-bottom: 17px !important; }
+.v110-ty-shop { min-height: 50px; padding: 12px 30px; border-radius: 9px; background: #592eff; color: #fff; font-weight: 600 !important; font-size: 17px !important; }
+.v110-ty-shop strong { font-size: 20px; letter-spacing: -.8px; margin-left: 4px; }
+.v110-ty-shop:hover { background: #4b20eb; }
+.v110-rewards { padding: 22px 25px 20px; border: 1px solid #e5dfda; border-radius: 15px; background: linear-gradient(125deg, #fcf8f4, #fffdfc 65%, #fff); box-shadow: 0 2px 4px #30241709; margin-bottom: 18px; }
+.v110-rewards-title { display: flex; gap: 11px; align-items: center; font-size: 21px !important; font-weight: 700; letter-spacing: -.4px; }
+.v110-rewards-title > svg { width: 26px; height: 26px; color: #805019; background: #fff4df; border-radius: 5px; padding: 2px; }
+.v110-reward-intro { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center; padding: 21px 0 22px; }
+.v110-reward-points { font-size: 36px; font-weight: 700; line-height: 1.2; letter-spacing: -1px; white-space: nowrap; }
+.v110-reward-caption { font-size: 14px; color: #5d5d5d; margin-top: 6px !important; }
+.v110-reward-date { display: flex; align-items: center; gap: 11px; font-size: 13px; line-height: 1.5; padding-left: 20px; border-left: 1px solid #e7e1db; min-height: 58px; }
+.v110-reward-date svg { width: 21px; height: 21px; color: #434b53; flex-shrink: 0; }
+.v110-reward-date.is-dated { background: #f0f7f0; border: 0; border-radius: 9px; padding: 12px; }
+.v110-reward-date.is-dated svg { color: #52ab6f; }
+.v110-reward-tier { display: flex; align-items: center; gap: 12px; border-top: 1px solid #e9e3dd; border-bottom: 1px solid #e9e3dd; padding: 18px 0; }
+.v110-reward-gem { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #ffedc9; color: #d89b29; flex-shrink: 0; }
+.v110-reward-gem svg { width: 25px; height: 25px; }
+.v110-reward-tier h3 { font-size: 20px; line-height: 1.3; letter-spacing: -.5px; }
+.v110-reward-tier p { font-size: 13px; margin-top: 2px !important; color: #414141; }
+.v110-reward-discount { padding: 6px 17px; background: #fff0d1; color: #593a12; border-radius: 25px; font-size: 14px; font-weight: 700; margin-left: auto; white-space: nowrap; }
+.v110-reward-progress { padding-top: 17px; }
+.v110-reward-progress-title { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; font-weight: 700; font-size: 16px; margin-bottom: 10px; }
+.v110-reward-meter { height: 12px; border-radius: 20px; background: #e9e9e9; overflow: hidden; }
+.v110-reward-meter > span { display: block; height: 100%; border-radius: 20px; background: linear-gradient(90deg, #142442, #213459); }
+.v110-reward-gap { font-size: 15px; margin-top: 13px !important; }
+.v110-reward-explanation { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.5; margin: 16px 0; color: #30343a; }
+.v110-reward-explanation > svg { flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; }
+.v110-reward-pending { font-size: 12px; color: #6e655d; margin-top: 9px !important; }
+.v110-reward-action { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; background: #152443; color: #fff; border: 1px solid #152443; border-radius: 10px; min-height: 45px; padding: 10px 15px; font-size: 15px !important; font-weight: 600 !important; }
+.v110-reward-action:hover { background: #243758; }
+.v110-reward-action svg { width: 18px; height: 18px; }
+.v110-reward-action.is-outline { background: transparent; color: #152443; }
+.v110-reward-balance { font-size: 12px; color: #69645f; text-align: center; margin-top: 10px !important; }
+.v110-reward-welcome { font-size: 13px; border-top: 1px solid #e9e3dd; padding-top: 15px; margin-bottom: 16px; }
+.v110-reward-welcome p { font-size: 12px; color: #65605b; margin-top: 5px !important; }
+.v110-reward-refund { font-size: 12px; background: #fff0df; color: #785129; border-radius: 7px; padding: 11px; margin-bottom: 14px; }
+.v110-reward-calculation { font-size: 12px; margin-top: 14px; color: #6d655e; }
+.v110-reward-calculation summary { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.v110-reward-calculation p { margin-top: 9px !important; }
+.v110-ty-details-title { display: flex; justify-content: space-between; gap: 15px; align-items: baseline; margin-bottom: 16px; }
+.v110-ty-details-title h2 { font-size: 20px; }
+.v110-ty-link { background: none; color: #111; text-decoration: underline; text-underline-offset: 3px; padding: 0; font-size: 15px !important; }
+.v110-ty-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; }
+.v110-ty-detail-grid h3 { font-size: 16px; margin-bottom: 8px !important; }
+.v110-ty-detail-grid h3:not(:first-child) { margin-top: 18px !important; }
+.v110-ty-detail-grid p { font-size: 15px; overflow-wrap: anywhere; }
+.v110-ty-visa { display: inline-block; padding: 3px 6px; margin-right: 6px; background: #1233c9; color: #fff; font-size: 12px; font-style: italic; font-weight: 700; border-radius: 3px; }
+.v110-ty-email { display: flex; align-items: center; gap: 9px; margin: 17px 2px 0 !important; font-size: 13px; color: #484a4e; }
+.v110-ty-email svg { width: 17px; height: 17px; flex-shrink: 0; }
+.v110-ty-aside { padding: 50px 0 40px 45px; min-width: 0; }
+.v110-ty-item { display: grid; grid-template-columns: 76px 1fr auto; align-items: center; gap: 18px; margin-bottom: 31px; }
+.v110-ty-item-image { position: relative; width: 76px; height: 85px; background: #e6e8ea; border-radius: 17px; border: 2px solid white; box-shadow: 0 3px 7px #00000015; }
+.v110-ty-item-image img { width: 100%; height: 100%; object-fit: cover; border-radius: 15px; }
+.v110-ty-quantity { position: absolute; top: -9px; right: -7px; border: 2px solid #fff; background: #101010; color: #fff; font-weight: 700; width: 27px; height: 27px; border-radius: 12px; display: grid; place-items: center; }
+.v110-ty-item p { font-size: 16px; line-height: 1.5; }
+.v110-ty-item small { display: block; font-size: 14px; color: #646464; }
+.v110-ty-item-price { white-space: nowrap; font-size: 16px; }
+.v110-ty-costs > div { display: flex; justify-content: space-between; gap: 18px; margin: 9px 0; font-size: 16px; }
+.v110-ty-costs .v110-ty-total { font-size: 21px; font-weight: 700; margin-top: 21px; }
+.v110-ty-total small { font-size: 13px; font-weight: 400; color: #737373; margin-right: 6px; }
+.v110-ty-summary-toggle { display: none; }
+.v110-ty-dialog { border: 1px solid #ddd; border-radius: 15px; padding: 24px; width: min(520px, calc(100% - 32px)); color: #141414; background: #fff; font: 15px/1.6 Arial, sans-serif; max-height: 85dvh; overflow: auto; }
+.v110-ty-dialog::backdrop { background: #0006; }
+.v110-ty-dialog-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 15px; }
+.v110-ty-dialog-heading h2 { margin: 0; font-size: 22px; }
+.v110-ty-close { font-size: 24px; line-height: 30px; width: 32px; height: 32px; border-radius: 50%; background: #f2f2f2; color: #222; }
+.v110-ty-dialog p + p { margin-top: 12px; }
+.v110-ty-dialog label { display: flex; gap: 10px; font-size: 14px; margin: 18px 0; align-items: flex-start; }
+.v110-ty-dialog input[type=checkbox] { width: 18px; height: 18px; flex-shrink: 0; accent-color: #152443; margin-top: 3px; }
+.v110-ty-dialog .v110-ty-demo-note { background: #f5f5f5; border-radius: 6px; padding: 11px; font-size: 12px; color: #666; margin: 16px 0; }
+.v110-ty-dialog .v110-reward-action { margin-top: 18px; }
+@media (max-width: 1120px) { .v110-ty-shell { width: calc(100% - 48px); } .v110-ty-main { padding-right: 28px; } .v110-ty-aside { padding-left: 28px; } .v110-ty-item { gap: 12px; grid-template-columns: 66px 1fr auto; } .v110-ty-item-image { width: 66px; height: 78px; } .v110-ty-item p { font-size: 14px; } .v110-ty-item-price { font-size: 14px; } .v110-rewards { padding-inline: 20px; } .v110-reward-points { font-size: 32px; } .v110-reward-intro { gap: 12px; } }
+@media (max-width: 850px) {
+  .v110-ty-shell { width: 100%; }
+  .v110-ty-header { padding: 20px; }
+  .v110-ty-header .v110-ty-shell { justify-content: center; }
+  .v110-ty-help { display: none; }
+  .v110-ty-brand { width: 123px; }
+  .v110-ty-background { background: #fff; }
+  .v110-ty-layout { display: flex; flex-direction: column; }
+  .v110-ty-main { padding: 25px 17px 28px; width: 100%; }
+  .v110-ty-heading { gap: 12px; margin-bottom: 23px; }
+  .v110-ty-heading > svg { width: 40px; height: 40px; }
+  .v110-ty-heading h1 { font-size: 22px; letter-spacing: -.5px; }
+  .v110-ty-heading p { font-size: 13px; }
+  .v110-ty-card { padding: 17px; border-radius: 13px; }
+  .v110-ty-card > h2 { font-size: 18px; margin-bottom: 9px !important; }
+  .v110-ty-confirmation p { font-size: 14px; margin-bottom: 13px !important; }
+  .v110-ty-shop { min-height: 44px; font-size: 14px !important; padding: 9px 20px; }
+  .v110-ty-shop strong { font-size: 17px; }
+  .v110-rewards { padding: 18px 18px 17px; border-radius: 14px; }
+  .v110-rewards-title { font-size: 19px !important; }
+  .v110-reward-intro { display: flex; flex-direction: column; align-items: stretch; gap: 18px; padding: 19px 0; }
+  .v110-reward-points { font-size: 30px; }
+  .v110-reward-date { border: 0; padding: 0; min-height: 0; font-size: 13px; align-items: flex-start; }
+  .v110-reward-date.is-dated { padding: 11px; }
+  .v110-reward-date svg { width: 19px; height: 19px; margin-top: 2px; }
+  .v110-reward-tier { padding: 16px 0; gap: 10px; }
+  .v110-reward-tier h3 { font-size: 19px; }
+  .v110-reward-tier p { font-size: 12px; }
+  .v110-reward-discount { padding: 5px 13px; font-size: 13px; }
+  .v110-reward-gem { width: 31px; height: 31px; }
+  .v110-reward-gem svg { width: 22px; height: 22px; }
+  .v110-reward-progress-title { font-size: 15px; gap: 10px; }
+  .v110-reward-gap { font-size: 14px; }
+  .v110-reward-explanation { font-size: 12px; margin-top: 17px; }
+  .v110-ty-details-title h2 { font-size: 18px; }
+  .v110-ty-link { font-size: 13px !important; }
+  .v110-ty-detail-grid { gap: 18px; }
+  .v110-ty-detail-grid h3 { font-size: 14px; }
+  .v110-ty-detail-grid p { font-size: 13px; }
+  .v110-ty-aside { order: -1; width: 100%; padding: 0; background: #f4f4f4; border-bottom: 1px solid #ddd; }
+  .v110-ty-summary-toggle { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px; padding: 15px 20px; background: none; color: #172b4b; font-size: 14px !important; }
+  .v110-ty-summary-toggle span:last-child { font-size: 17px; font-weight: 700; }
+  .v110-ty-summary-body { display: none; padding: 16px 20px 25px; }
+  .v110-ty-aside.is-expanded .v110-ty-summary-body { display: block; }
+  .v110-ty-item { grid-template-columns: 66px 1fr auto; }
+  .v110-ty-item p { font-size: 14px; }
+  .v110-ty-costs > div { font-size: 14px; }
+}
+@media (max-width: 360px) { .v110-ty-main { padding-inline: 12px; } .v110-rewards { padding-inline: 14px; } .v110-reward-progress-title { font-size: 14px; } .v110-reward-tier h3 { font-size: 17px; } }
+
+.v110-ty-heading h1 { margin-top: 2px !important; }
+
+/* Compact tier progress, with the next tier and its discount on the bar. */
+.v110-rewards .v110-reward-progress { padding-top: 24px; }
+.v110-progress-heading { display: grid; grid-template-columns: minmax(75px, 1fr) minmax(0, 2.35fr) minmax(75px, 1fr); align-items: center; gap: 10px; margin-bottom: 17px; }
+.v110-progress-current-benefit { display: grid; gap: 2px; text-align: left; color: #747474; font-size: 12px; line-height: 1.4; }
+.v110-progress-next-benefit { text-align: right; }
+.v110-progress-current-benefit strong { color: #263750; font-size: 18px; }
+.v110-progress-current-benefit > span:last-child { color: #535d6b; font-size: 13px; font-weight: 700; }
+.v110-progress-distance { text-align: center; font-size: 21px; line-height: 1.35; font-weight: 700; letter-spacing: -.6px; color: #141414; }
+.v110-progress-distance strong { color: #152443; white-space: nowrap; }
+.v110-rewards .v110-reward-meter { height: 6px; border: 1px solid #d8dadd; border-radius: 5px; background: #f4f4f4; }
+.v110-rewards .v110-reward-meter > span { background: #19243b; border-radius: 2px; }
+.v110-rewards .v110-reward-progress-title { margin: 10px 0 0; font-size: 14px; font-weight: 400; color: #777; }
+.v110-rewards .v110-reward-progress-title > span:last-child { color: #26354e; font-weight: 700; }
+.v110-points-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #e6dfd8; margin-top: 21px; padding: 19px 0; }
+.v110-points-value { font-size: 25px; font-weight: 700; letter-spacing: -.7px; line-height: 1.25; white-space: nowrap; }
+.v110-points-description { display: inline-flex; align-items: center; gap: 6px; color: #626262; font-size: 13px; white-space: nowrap; }
+.v110-points-help { position: relative; display: inline-flex; flex-shrink: 0; vertical-align: middle; }
+.v110-points-info { display: inline-flex; align-items: center; justify-content: center; padding: 2px; width: 22px; height: 24px; background: none; color: #68717c; cursor: pointer; }
+.v110-points-info svg { width: 17px; height: 17px; }
+.v110-points-tooltip { visibility: hidden; opacity: 0; position: absolute; bottom: calc(100% + 9px); right: -2px; width: 290px; max-width: calc(100vw - 64px); padding: 12px 14px; border-radius: 7px; box-shadow: 0 5px 20px #14213b26; background: #202b3e; color: #fff; font-size: 13px; line-height: 1.55; font-weight: 400; text-align: left; white-space: normal; z-index: 15; pointer-events: none; }
+.v110-points-tooltip::after { content: ''; position: absolute; bottom: -6px; right: 8px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid #202b3e; }
+.v110-points-help.is-open .v110-points-tooltip { visibility: visible; opacity: 1; }
+@media (hover: hover) { .v110-points-help:hover .v110-points-tooltip { visibility: visible; opacity: 1; } }
+@media (max-width: 850px) {
+  .v110-rewards .v110-reward-progress { padding-top: 20px; }
+  .v110-progress-heading { grid-template-columns: minmax(60px, 1fr) minmax(0, 2fr) minmax(60px, 1fr); gap: 8px; margin-bottom: 14px; }
+  .v110-progress-current-benefit { font-size: 10px; }
+  .v110-progress-current-benefit strong { font-size: 16px; }
+  .v110-progress-current-benefit > span:last-child { font-size: 12px; }
+  .v110-progress-distance { font-size: 17px; letter-spacing: -.3px; }
+  .v110-rewards .v110-reward-progress-title { font-size: 13px; }
+  .v110-points-row { gap: 8px; margin-top: 18px; padding-block: 17px; }
+  .v110-points-value { font-size: 21px; letter-spacing: -.5px; }
+  .v110-points-description { font-size: 12px; gap: 4px; }
+  .v110-points-info { width: 18px; height: 24px; padding-inline: 0; }
+  .v110-points-info svg { width: 16px; height: 16px; }
+}
+@media (max-width: 380px) { .v110-points-value { font-size: 20px; } .v110-points-description { font-size: 11px; } }
+@media (max-width: 340px) { .v110-points-row { gap: 5px; } .v110-points-value { font-size: 18px; } .v110-points-description { font-size: 10.5px; gap: 3px; } .v110-points-info { width: 15px; } }
+
+/* Reference rewards icon is embedded in the points line for offline use. */
+.v110-points-earned { display: inline-flex; align-items: center; gap: 9px; flex-shrink: 0; white-space: nowrap; }
+.v110-points-reward-icon { display: block; width: 34px; height: 34px; flex-shrink: 0; clip-path: circle(36% at 50% 50%); transform: scale(1.38); }
+@media (max-width: 850px) {
+  .v110-points-row { gap: 6px; }
+  .v110-points-earned { gap: 5px; }
+  .v110-points-reward-icon { width: 26px; height: 26px; }
+  .v110-points-value { font-size: 19px; }
+  .v110-points-description { font-size: 11px; }
+}
+@media (max-width: 380px) {
+  .v110-points-row { gap: 5px; }
+  .v110-points-earned { gap: 4px; }
+  .v110-points-reward-icon { width: 24px; height: 24px; }
+  .v110-points-value { font-size: 18px; }
+  .v110-points-description { font-size: 10.5px; gap: 3px; }
+  .v110-points-info { width: 16px; }
+}
+@media (max-width: 340px) {
+  .v110-points-row { gap: 4px; }
+  .v110-points-reward-icon { width: 22px; height: 22px; }
+  .v110-points-value { font-size: 16px; }
+  .v110-points-description { font-size: 9.5px; gap: 2px; }
+  .v110-points-info { width: 14px; }
+}
+
+/* Paid-order summary: checkout-tier discount and the same order points estimate. */
+.v110-ty-item-discount { display: flex; align-items: flex-start; gap: 5px; margin-top: 6px; color: #737373; font-size: 13px; line-height: 1.4; }
+.v110-ty-item-discount svg { flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px; }
+.v110-ty-item-price { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+.v110-ty-item-price s { color: #777; font-size: 14px; font-weight: 400; }
+.v110-ty-item-price strong { font-weight: 600; }
+.v110-ty-costs .v110-ty-member-saving { font-size: 14px; color: #667060; }
+.v110-ty-estimated-points { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; margin-top: 22px; padding-top: 19px; border-top: 1px solid #dcdcdc; font-size: 16px; }
+.v110-ty-estimated-points > span:first-child { color: #737373; }
+.v110-ty-estimated-points > span:last-child { white-space: nowrap; }
+.v110-ty-estimated-points strong { font-size: 18px; margin-right: 4px; }
+@media (max-width: 1120px) { .v110-ty-item-discount { font-size: 12px; } .v110-ty-item-price s { font-size: 12px; } }
+@media (max-width: 850px) { .v110-ty-estimated-points { font-size: 14px; } .v110-ty-estimated-points strong { font-size: 17px; } }
