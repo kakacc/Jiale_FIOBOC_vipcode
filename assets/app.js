@@ -541,7 +541,7 @@ function cartSummaryHTML(result,{drawer=false,english=false}={}){
   <p class="cart-tax-note">${english?'Taxes and shipping calculated at checkout.':'税费和运费将在结账时计算。'}</p>
   <button class="link cart-note-button" data-action="cart-note-toggle" aria-expanded="${cartNoteOpen}">${noteLabel}</button>
   ${cartNoteOpen?`<label class="cart-note-label" for="cart-note">${noteLabel}</label><textarea id="cart-note" rows="2" placeholder="${english?'Add a note':'添加订单备注'}">${esc(cartNote)}</textarea>`:''}
-  ${isThanksgivingVersion()&&cartHasOnlyFreeGifts()?'<p class="cart-gift-checkout-note" lang="zh-CN">免费商品需加购其他商品一起结账</p>':''}
+  ${isThanksgivingVersion()&&cartHasOnlyFreeGifts()?'<p class="cart-gift-checkout-note" lang="en">Add at least one other item to your cart to check out with your free gift.</p>':''}
   <button class="btn cart-view-button" data-action="checkout-open" ${state.qty<=0?'disabled':''}>${english?'Checkout':'去结账'}</button>
   ${drawer&&!english?'<button class="link cart-fullpage-link" data-action="cart-view-page">查看购物车</button>':''}
  </aside>`;
@@ -637,7 +637,7 @@ function checkoutGiftOfferHTML(){
  if(!gifts.length)return '';
  const options=(values,selected)=>values.map(value=>`<option value="${esc(value)}" ${value===selected?'selected':''}>${esc(value)}</option>`).join('');
  return `<section class="checkout-gift-offer" aria-labelledby="checkout-gift-offer-title">
-  <h2 id="checkout-gift-offer-title" lang="zh-CN">您有免费礼品可加购</h2>
+  <h2 id="checkout-gift-offer-title" lang="en">You have a free gift to add</h2>
   ${gifts.map(gift=>`<article class="checkout-gift-item" data-checkout-gift="${gift.id}">
    <div class="checkout-gift-product">
     <img src="${esc(gift.image)}" alt="">
