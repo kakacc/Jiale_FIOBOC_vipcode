@@ -159,6 +159,30 @@
 .v110-rewards .v110-reward-progress-title { margin: 10px 0 0; font-size: 14px; font-weight: 400; color: #777; }
 .v110-rewards .v110-reward-progress-title > span:last-child { color: #26354e; font-weight: 700; }
 .v110-rewards .v110-reward-credit-note { margin: 7px 0 0; color: #666; font-size: 12px; line-height: 1.4; }
+/* V1.1.0 VIP3 replaces upgrade progress with the current tier and benefit. */
+.v110-highest-tier-overview { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.v110-highest-tier-current { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.v110-highest-tier-label { display: block; color: #747474; font-size: 12px; }
+.v110-highest-tier-current h3 { color: #263750; font-size: 26px; line-height: 1.25; letter-spacing: -.5px; }
+.v110-highest-tier-current p { color: #535d6b; font-size: 13px; margin-top: 3px !important; }
+.v110-highest-tier-discount { flex-shrink: 0; padding: 10px 17px; border-radius: 10px; background: #fff0d1; color: #593a12; text-align: center; }
+.v110-highest-tier-discount strong { display: block; font-size: 23px; line-height: 1.25; }
+.v110-highest-tier-discount span { display: block; font-size: 12px; }
+.v110-highest-tier-message { margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid #e6dfd8; }
+.v110-highest-tier-message strong { display: block; color: #263750; font-size: 18px; line-height: 1.4; }
+.v110-highest-tier-message p { color: #626262; font-size: 14px; line-height: 1.55; margin-top: 6px !important; }
+@media (max-width: 850px) {
+  .v110-highest-tier-overview { gap: 12px; }
+  .v110-highest-tier-current { gap: 9px; }
+  .v110-highest-tier-label { font-size: 11px; }
+  .v110-highest-tier-current h3 { font-size: 24px; }
+  .v110-highest-tier-current p { font-size: 12px; }
+  .v110-highest-tier-discount { padding: 8px 11px; }
+  .v110-highest-tier-discount strong { font-size: 20px; }
+  .v110-highest-tier-discount span { font-size: 11px; }
+  .v110-highest-tier-message strong { font-size: 16px; }
+  .v110-highest-tier-message p { font-size: 13px; }
+}
 .v110-points-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #e6dfd8; margin-top: 21px; padding: 19px 0; }
 .v110-points-value { font-size: 25px; font-weight: 700; letter-spacing: -.7px; line-height: 1.25; white-space: nowrap; }
 .v110-points-description { display: inline-flex; align-items: center; gap: 6px; color: #626262; font-size: 13px; white-space: nowrap; }

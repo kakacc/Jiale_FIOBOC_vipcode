@@ -56,9 +56,17 @@
   }
 
   function rewardCard(m) {
+    const highestTier = document.body.dataset.projectVersion === '1.1.0' && m.tier?.name === 'VIP3';
     return `<section class="v110-rewards" aria-label="Membership rewards for this order" data-shopify-extension-target="purchase.thank-you.block.render">
       <h2 class="v110-rewards-title">${icons.gift}Membership rewards for this order</h2>
-      ${!m.guest?`<div class="v110-reward-progress">
+      ${highestTier?`<div class="v110-reward-progress v110-reward-highest-tier">
+        <div class="v110-highest-tier-message"><strong>You're at our highest tier!</strong><p>Keep shopping to maintain your VIP3 status and continue enjoying exclusive benefits.</p></div>
+        <div class="v110-highest-tier-overview">
+          <div class="v110-highest-tier-current"><span class="v110-reward-gem">${icons.gem}</span><div><span class="v110-highest-tier-label">Current tier</span><h3>${m.tier.name}</h3><p>Highest Membership Tier</p></div></div>
+          <div class="v110-highest-tier-discount"><strong>${m.tier.discount}% OFF</strong><span>Member Discount</span></div>
+        </div>
+      </div>
+      `:!m.guest?`<div class="v110-reward-progress">
         <div class="v110-progress-heading"><div class="v110-progress-current-benefit"><span>Current tier</span><strong>${m.tier.name}</strong><span>${m.tier.discount}% OFF</span></div><p class="v110-progress-distance">${m.next?`${usd(m.gap)} away from <strong>${m.next.name}</strong>`:'You’ve reached the highest tier. Keep it up!'}</p><div class="v110-progress-current-benefit v110-progress-next-benefit"><span>${m.next?'Next tier':'Highest tier'}</span><strong>${m.next?m.next.name:m.tier.name}</strong><span>${m.next?m.next.discount:m.tier.discount}% OFF</span></div></div>
         <div class="v110-reward-meter" role="progressbar" aria-label="${m.next?'Confirmed spend from '+m.tier.name+' to '+m.next.name:'Highest tier reached'}" aria-valuenow="${demo.spend}" aria-valuemin="${m.tier.min}" aria-valuemax="${m.next?m.next.min:Math.max(m.tier.min,demo.spend)}"><span style="width:${m.next?Math.min(100,Math.max(0,(demo.spend-m.tier.min)/(m.next.min-m.tier.min)*100)):100}%"></span></div>
         <div class="v110-reward-progress-title"><span>${usd(m.tier.min)}</span><span>${m.next?usd(m.next.min):usd(m.tier.min)+'+'}</span></div>
