@@ -1042,15 +1042,6 @@ body[data-project-version="1.0.0"] .product-current-price { display: none !impor
   color: var(--member-muted);
 }
 .return-gift-card .return-terms li + li { margin-top: 6px; }
-.return-gift-feedback { display: flex; }
-.return-gift-feedback .return-gift-status:empty { display: none; }
-.return-member .return-gift-status:not(:empty) {
-  margin-top: 12px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: #edf5ee;
-  color: #24563d;
-}
 
 .return-dialog {
   width: min(460px, calc(100% - 28px));

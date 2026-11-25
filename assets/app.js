@@ -541,7 +541,7 @@ function cartSummaryHTML(result,{drawer=false,english=false}={}){
   <p class="cart-tax-note">${english?'Taxes and shipping calculated at checkout.':'税费和运费将在结账时计算。'}</p>
   <button class="link cart-note-button" data-action="cart-note-toggle" aria-expanded="${cartNoteOpen}">${noteLabel}</button>
   ${cartNoteOpen?`<label class="cart-note-label" for="cart-note">${noteLabel}</label><textarea id="cart-note" rows="2" placeholder="${english?'Add a note':'添加订单备注'}">${esc(cartNote)}</textarea>`:''}
-  ${isThanksgivingVersion()&&cartHasOnlyFreeGifts()?'<p class="cart-gift-checkout-note" lang="en">Add at least one other item to your cart to check out with your free gift.</p>':''}
+  ${isThanksgivingVersion()&&cartHasOnlyFreeGifts()?'<p class="cart-gift-checkout-note" lang="en">Add 1 more item to unlock your free gift.</p>':''}
   <button class="btn cart-view-button" data-action="checkout-open" ${state.qty<=0?'disabled':''}>${english?'Checkout':'去结账'}</button>
   ${drawer&&!english?'<button class="link cart-fullpage-link" data-action="cart-view-page">查看购物车</button>':''}
  </aside>`;

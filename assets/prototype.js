@@ -31,7 +31,6 @@ const thanksgivingGiftRedemptions = [];
   const giftDetailsAdd = document.getElementById('return-gift-details-add');
   let activeRedeemedGift = null;
   const giftRedeem = document.getElementById('return-gift-redeem');
-  const giftStatus = document.getElementById('return-gift-status');
   const startingPoints = 4500;
   const giftCost = 100;
   let giftBalance = startingPoints;
@@ -153,7 +152,6 @@ Coupon code: ${returnCode.textContent.trim()}`;
     const category = selectedTab.dataset.category;
     giftsBanner.hidden = category !== 'all';
     giftCard.hidden = category !== 'gift';
-    giftStatus.textContent = '';
     if (!catalogResults.querySelector('.return-catalog-option')) appendCatalogOptions();
     catalogResults.querySelectorAll('.return-catalog-option').forEach(card => {
       card.hidden = category !== 'all' && card.dataset.category !== category;
@@ -318,8 +316,6 @@ Coupon code: ${returnCode.textContent.trim()}`;
     if (action === 'cart') {
       cartTab.click();
       toast(`已兑换并加购 ${gift.name}（${color} / ${size}），扣除 ${giftCost} 积分。`);
-    } else {
-      giftStatus.textContent = `Gift saved to My rewards. ${giftCost} points deducted.`;
     }
   });
 
