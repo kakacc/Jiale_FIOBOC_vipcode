@@ -40,7 +40,7 @@ const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 const tierIndex=spend=>spend>=1500?3:spend>=500?2:spend>=150?1:0;
 const tier=()=>TIERS[tierIndex(state.spend)];
 const round=n=>Math.round((n+Number.EPSILON)*100)/100;
-const currentPointsRule=()=>document.body.dataset.projectVersion==='1.1.0';
+const currentPointsRule=()=>isCurrentPrototypeVersion();
 const POINTS_EARNING_COPY='购物积分按美元计算。将商品实付小计（不含税费、运费和礼品卡金额）折算为美元，乘以对应的积分倍率，最后向下取整。';
 const earnPoints=(netUsd,rate)=>{
  if(!currentPointsRule())return Math.floor(netUsd)*Math.round(rate*10)/10;
@@ -206,7 +206,8 @@ function couponValidity(w,amount=true){
  if(w.status==='canceled')return '优惠券已撤销，不能核销。';
  if(w.status!=='available')return '优惠券当前不可用。';
  const r=rewardById(w.reward);if(!r||r.type!=='coupon')return '这不是商品优惠券，请核对权益类型。';
- const res=calculate({spend:state.spend,quantity:state.qty,price:role==='pos'?56:cartUnitPrice(),promo:state.promo,first:state.first,coupon:r});
+ const pricing=role==='pos'?{quantity:state.qty,price:56}:cartPricingInput();
+ const res=calculate({spend:state.spend,...pricing,promo:state.promo,first:state.first,coupon:r});
  if(amount&&res.base<r.min)return `本单会员基础折扣后商品金额 ${money(res.base)}，未满 ${money(r.min)}。`;
  if(amount&&res.chosen.id!=='coupon')return `本单 ${res.chosen.name} 更优惠（${money(res.chosen.total)}）。保留这张券，本次不核销。`;
  return null;
@@ -362,6 +363,7 @@ window.addEventListener('hashchange',()=>{
 
 // Cart view mirrors the reference storefront. Calculations use the existing phase-one rules.
 let cartOpen=true,cartView='collection',cartNote='',cartNoteOpen=false;
+function isThanksgivingVersion(){return document.body.dataset.projectVersion==='1.2.0';}
 const cartPreviousCheckout=checkout,cartPreviousShell=nativeStorefrontShell,cartPreviousRender=render;
 // Redemption copy uses the store confirmed by the user on 2026-10-14.
 const COUPON_STORE={name:'FIOBOC Glendale Galleria',address:'2170 Glendale Galleria, Glendale, CA 91204',source:'https://www.fioboc.com/pages/fioboc-stores'};
@@ -388,16 +390,46 @@ redeemOpen=function(id){
  modal(`兑换${r.name}`,`${r.type==='coupon'?couponThresholdHTML(r):`<p class="reward-card-description">${rewardDescription(r)}</p>`}${rewardUseLimitDetails(r)}<div class="detail"><div class="row between"><span>本次消耗</span><strong>${number(r.cost)} 积分</strong></div><div class="row between"><span>兑换后余额</span><strong>${number(state.points-r.cost)} 积分</strong></div></div>${r.type==='coupon'?`<div class="notice coupon-redemption-finality" role="note"><strong>${couponRedemptionFinality()}</strong></div>`:''}`,[{text:'返回',action:'close',secondary:true},{text:'确认兑换',action:'redeem-confirm',id}]);
 };
 function cartLineItems(){return state.cartItems?state.cartItems.filter(line=>line.quantity>0):state.qty?[{id:'tee-black-s',product:'tee',name:'莫代尔混纺短袖T恤：修身款',englishName:'Modal Blend Short Sleeve Tee:Slim Fit',color:'黑色',size:'S',price:56,quantity:state.qty,image:'./assets/images/modal-black.webp'}]:[];}
-function cartUnitPrice(){const lines=cartLineItems(),quantity=lines.reduce((sum,line)=>sum+line.quantity,0);return quantity?lines.reduce((sum,line)=>sum+line.price*line.quantity,0)/quantity:56;}
-function cartResult(){return {...calculate({spend:state.spend,quantity:state.qty,price:cartUnitPrice(),promo:state.promo,first:state.first,coupon:couponRewardById(state.coupon)||null}),quantity:state.qty};}
+function cartHasOnlyFreeGifts(){
+ const lines=cartLineItems();
+ return lines.length>0&&lines.every(line=>line.gift);
+}
+const POLO_LIST_PRICE=70;
+function cartPricingInput(){
+ const lines=cartLineItems().filter(line=>!line.gift&&!line.atListPrice);
+ const quantity=lines.reduce((sum,line)=>sum+line.quantity,0);
+ const subtotal=lines.reduce((sum,line)=>sum+line.price*line.quantity,0);
+ return {quantity,price:quantity?subtotal/quantity:56};
+}
+function cartResult(){
+ if(isThanksgivingVersion()&&cartHasOnlyFreeGifts()){
+  const lines=cartLineItems();
+  const subtotal=round(lines.reduce((sum,line)=>sum+POLO_LIST_PRICE*line.quantity,0));
+  const t=tier();
+  const chosen={id:'list-price',name:'商品原价',total:subtotal,valid:true};
+  return {t,subtotal,base:subtotal,bundle:0,candidates:[chosen],chosen,quantity:state.qty,pointsBasisUsd:subtotal,points:earnPoints(subtotal,t.rate)};
+ }
+ const pricing=cartPricingInput();
+ const result={...calculate({spend:state.spend,...pricing,promo:state.promo,first:state.first,coupon:couponRewardById(state.coupon)||null}),quantity:pricing.quantity};
+ const listPriceSubtotal=round(cartLineItems().reduce((sum,line)=>sum+(line.atListPrice?line.price*line.quantity:0),0));
+ if(!listPriceSubtotal)return result;
+ const includeListPrice=candidate=>({...candidate,total:round(candidate.total+listPriceSubtotal)});
+ const pointsBasisUsd=round(result.pointsBasisUsd+listPriceSubtotal);
+ return {...result,
+  subtotal:round(result.subtotal+listPriceSubtotal),base:round(result.base+listPriceSubtotal),
+  candidates:result.candidates.map(includeListPrice),chosen:includeListPrice(result.chosen),
+  pointsBasisUsd,points:earnPoints(pointsBasisUsd,result.t.rate)
+ };
+}
 function cartCouponModel(){
- const withoutCoupon=calculate({spend:state.spend,quantity:state.qty,price:cartUnitPrice(),promo:state.promo,first:state.first});
+ const pricing=cartPricingInput();
+ const withoutCoupon=calculate({spend:state.spend,...pricing,promo:state.promo,first:state.first});
  const shippingCost=state.ship&&!activeWallet().some(w=>w.reward==='ship')?400:0;
  const pointsForCoupon=Math.max(0,state.points-shippingCost);
  const rows=cartCouponRewards().map(reward=>{
   const selectedWallet=state.coupon===reward.id&&state.selectedCouponWalletId?state.wallet.find(w=>w.id===state.selectedCouponWalletId&&w.reward===reward.id):null;
   const wallet=selectedWallet||activeWallet().find(w=>w.reward===reward.id&&!couponValidity(w,false));
-  const result=calculate({spend:state.spend,quantity:state.qty,price:cartUnitPrice(),promo:state.promo,first:state.first,coupon:reward});
+  const result=calculate({spend:state.spend,...pricing,promo:state.promo,first:state.first,coupon:reward});
   const reasons=[];
   if(!state.joined)reasons.push('尚未加入会员');
   if(state.sync)reasons.push('账户同步失败');
@@ -413,7 +445,7 @@ function cartCouponModel(){
   }
   return {reward,wallet,result,reasons,eligible:reasons.length===0};
  });
- const context=JSON.stringify([state.memberId,state.spend,state.qty,cartUnitPrice(),state.points,state.joined,state.sync,state.promo,state.first,state.ship,state.day,state.wallet.map(w=>[w.id,w.reward,w.status,w.created,w.customer])]);
+ const context=JSON.stringify([state.memberId,state.spend,state.qty,pricing,state.points,state.joined,state.sync,state.promo,state.first,state.ship,state.day,state.wallet.map(w=>[w.id,w.reward,w.status,w.created,w.customer])]);
  return {rows,withoutCoupon,context};
 }
 function normalizeCartCouponSelection(){
@@ -481,10 +513,11 @@ function cartDiscountItems(result){
  else if(chosen.id==='promo')rows.push({name:`优惠码 / 活动折扣 · ${state.promo}%`,amount:round(result.subtotal-chosen.total)});
  return rows;
 }
+const CART_DISCOUNT_TAG_ICON='<svg class="cart-discount-tag-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7" cy="7" r="1"/></svg>';
+const FREE_GIFT_DISCOUNT_LABEL='Free gift';
 function cartProductDiscountHTML(result){
  const rows=cartDiscountItems(result);if(!rows.length)return '';
- const icon='<svg class="cart-discount-tag-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7" cy="7" r="1"/></svg>';
- return `<div class="cart-product-discount-labels" aria-label="商品折扣">${rows.map(row=>`<div class="cart-tag-discount-row"><span class="cart-tag-discount-name">${icon}<span>${esc(row.name)}</span></span><span class="cart-tag-discount-amount num">−${money(row.amount)}</span></div>`).join('')}</div>`;
+ return `<div class="cart-product-discount-labels" aria-label="商品折扣">${rows.map(row=>`<div class="cart-tag-discount-row"><span class="cart-tag-discount-name">${CART_DISCOUNT_TAG_ICON}<span>${esc(row.name)}</span></span><span class="cart-tag-discount-amount num">−${money(row.amount)}</span></div>`).join('')}</div>`;
 }
 function cartProductPriceHTML(result){
  const quantity=result.quantity??state.qty,originalUnit=quantity?round(result.subtotal/quantity):0,discountedUnit=quantity?round(result.chosen.total/quantity):0;
@@ -496,32 +529,60 @@ function pointsCalculationHTML(result){
   ? `${money(pointsBasisUsd)} × ${t.rate}，向下取整得 ${number(points)} 积分`
   : `${number(Math.floor(pointsBasisUsd))} × ${t.rate} = ${number(points)} 积分`;
 }
-function cartSummaryHTML(result){
- return `<aside class="summary cart-clean-summary"><div class="summary-line total"><strong>商品应付小计</strong><strong class="num">${money(result.chosen.total)}</strong></div><div class="cart-points" aria-live="polite"><span>预计可得积分 <button type="button" class="cart-membership-link" data-action="cart-points-rules" aria-haspopup="dialog">查看积分制度</button></span><strong class="num">${number(result.points)} 积分</strong><p>${pointsCalculationHTML(result)} · 发货或提货后 30 天可用</p></div><p class="cart-tax-note">税费和运费将在结账时计算。</p><button class="link cart-note-button" data-action="cart-note-toggle" aria-expanded="${cartNoteOpen}">订单备注</button>${cartNoteOpen?`<label class="cart-note-label" for="cart-note">备注内容</label><textarea id="cart-note" rows="2" placeholder="添加订单备注">${esc(cartNote)}</textarea>`:''}<button class="btn cart-view-button" data-action="checkout-open" ${state.qty<=0?'disabled':''}>去结账</button></aside>`;
+function cartSummaryHTML(result,{drawer=false,english=false}={}){
+ const noteLabel=english?'Order note':'订单备注';
+ return `<aside class="summary cart-clean-summary">
+  <div class="summary-line total"><strong>${english?'Subtotal:':'商品应付小计'}</strong><strong class="num">${money(result.chosen.total)}</strong></div>
+  <div class="cart-points" aria-live="polite">
+   <span>${english?'Estimated points':'预计可得积分'} <button type="button" class="cart-membership-link" data-action="cart-points-rules" aria-haspopup="dialog">${english?'How Points Work':'查看积分制度'}</button></span>
+   <strong class="num">${number(result.points)} ${english?'points':'积分'}</strong>
+   <p>${pointsCalculationHTML(result)} · 发货或提货后 30 天可用</p>
+  </div>
+  <p class="cart-tax-note">${english?'Taxes and shipping calculated at checkout.':'税费和运费将在结账时计算。'}</p>
+  <button class="link cart-note-button" data-action="cart-note-toggle" aria-expanded="${cartNoteOpen}">${noteLabel}</button>
+  ${cartNoteOpen?`<label class="cart-note-label" for="cart-note">${noteLabel}</label><textarea id="cart-note" rows="2" placeholder="${english?'Add a note':'添加订单备注'}">${esc(cartNote)}</textarea>`:''}
+  ${isThanksgivingVersion()&&cartHasOnlyFreeGifts()?'<p class="cart-gift-checkout-note" lang="zh-CN">免费商品需加购其他商品一起结账</p>':''}
+  <button class="btn cart-view-button" data-action="checkout-open" ${state.qty<=0?'disabled':''}>${english?'Checkout':'去结账'}</button>
+  ${drawer&&!english?'<button class="link cart-fullpage-link" data-action="cart-view-page">查看购物车</button>':''}
+ </aside>`;
 }
 function cartAllocatedLines(result){
- const lines=cartLineItems().map(line=>({line,result:{...result,quantity:line.quantity,subtotal:round(line.price*line.quantity),chosen:{...result.chosen,total:round(line.price*line.quantity)},discountItems:[]}}));
+ const lines=cartLineItems().map(line=>{
+  const price=line.gift&&result.chosen.id==='list-price'?POLO_LIST_PRICE:line.price;
+  const subtotal=round(price*line.quantity);
+  return {line,result:{...result,quantity:line.quantity,subtotal,chosen:{...result.chosen,total:subtotal},discountItems:[]}};
+ });
+ const discountableLines=lines.filter(({line})=>!line.gift&&!line.atListPrice);
+ const rawCents=discountableLines.reduce((sum,item)=>sum+Math.round(item.result.subtotal*100),0);
  for(const discount of cartDiscountItems(result)){
-  const cents=Math.round(discount.amount*100),rawCents=Math.round(result.subtotal*100);
+  const cents=Math.round(discount.amount*100);
   if(!rawCents)continue;
-  const allocations=lines.map((item,index)=>{const exact=cents*Math.round(item.result.subtotal*100)/rawCents;return {index,amount:Math.floor(exact),remainder:exact-Math.floor(exact)};});
+  const allocations=discountableLines.map((item,index)=>{const exact=cents*Math.round(item.result.subtotal*100)/rawCents;return {index,amount:Math.floor(exact),remainder:exact-Math.floor(exact)};});
   let left=cents-allocations.reduce((sum,item)=>sum+item.amount,0);
   for(const item of [...allocations].sort((a,b)=>b.remainder-a.remainder||a.index-b.index)){if(left<=0)break;item.amount++;left--;}
-  for(const item of allocations)if(item.amount>0){const row=lines[item.index].result;row.discountItems.push({name:discount.name,amount:item.amount/100});row.chosen.total=round(row.chosen.total-item.amount/100);}
+  for(const item of allocations)if(item.amount>0){const row=discountableLines[item.index].result;row.discountItems.push({name:discount.name,amount:item.amount/100});row.chosen.total=round(row.chosen.total-item.amount/100);}
  }
  return lines;
 }
-function cartLineProductHTML(item){
+function cartLineProductHTML(item,english=false){
  const {line,result}=item;
- return `<div class="product cart-product-with-tags"><img class="cart-product-image" src="${esc(line.image)}" alt="${esc(line.name+'，'+line.color)}"><div class="cart-product-body"><h3>${esc(line.name)}</h3><p>${esc(line.color)} / ${esc(line.size)}</p><div class="quantity" aria-label="${esc(line.name)}购买数量"><button data-action="cart-line-down" data-id="${esc(line.id)}" aria-label="减少数量">−</button><span class="num">${line.quantity}</span><button data-action="cart-line-up" data-id="${esc(line.id)}" aria-label="增加数量" ${state.qty>=24?'disabled':''}>+</button></div></div>${cartProductPriceHTML(result)}${cartProductDiscountHTML(result)}<button class="link cart-remove" data-action="cart-line-remove" data-id="${esc(line.id)}">移除</button></div>`;
+ const name=english?(line.englishName||line.name):line.name;
+ const color=english?({'黑色':'Black','白色':'White'}[line.color]||line.color):line.color;
+ const giftQuantity=english?`Qty ${line.quantity}`:`${line.quantity} 件`;
+ const quantity=line.gift
+  ? (result.chosen.total===0
+   ? `<p class="cart-tag-discount-name">${CART_DISCOUNT_TAG_ICON}<span>${english?FREE_GIFT_DISCOUNT_LABEL:'积分兑换礼品'} · ${giftQuantity}</span></p>`
+   : `<p>${giftQuantity}</p>`)
+  : `<div class="quantity" aria-label="${esc(name)} ${english?'quantity':'购买数量'}"><button data-action="cart-line-down" data-id="${esc(line.id)}" aria-label="${english?'Decrease quantity':'减少数量'}">−</button><span class="num">${line.quantity}</span><button data-action="cart-line-up" data-id="${esc(line.id)}" aria-label="${english?'Increase quantity':'增加数量'}" ${state.qty>=24?'disabled':''}>+</button></div>`;
+ return `<div class="product cart-product-with-tags"><img class="cart-product-image" src="${esc(line.image)}" alt=""><div class="cart-product-body"><h3>${esc(name)}</h3><p>${esc(color)} / ${esc(line.size)}</p>${quantity}</div>${cartProductPriceHTML(result)}${cartProductDiscountHTML(result)}<button class="link cart-remove" data-action="cart-line-remove" data-id="${esc(line.id)}">${english?'Remove':'移除'}</button></div>`;
 }
 function cartChangeLine(id,change){
  const lines=cartLineItems().map(line=>({...line})),line=lines.find(item=>item.id===id);if(!line)return false;
- if(change>0&&state.qty>=24)return false;
+ if(change>0&&(line.gift||state.qty>=24))return false;
  line.quantity=change==='remove'?0:Math.max(0,line.quantity+change);state.cartItems=lines.filter(item=>item.quantity>0);state.qty=state.cartItems.reduce((sum,item)=>sum+item.quantity,0);
  if(!state.qty){state.ship=false;state.coupon=null;state.selectedCouponWalletId=null;}return true;
 }
-function cartProductListHTML(result){return cartAllocatedLines(result).map(cartLineProductHTML).join('');}
+function cartProductListHTML(result,english=false){return cartAllocatedLines(result).map(item=>cartLineProductHTML(item,english)).join('');}
 checkout=function(isPos=false){
  if(!isPos)state.ship=false;
  if(!isPos)normalizeCartCouponSelection();
@@ -548,29 +609,58 @@ function checkoutFormProblem(){
  if(!checkoutAddressReady())return '请填写完整的收货地址和有效邮政编码。';
  return orderError(orderPlan())||'';
 }
-function checkoutShippingPrice(){if(!checkoutAddressReady())return '填写地址后计算';if(state.address!=='us')return '按目的地计算';return state.qty>=3||state.first?'免费':'结账时计算';}
+function checkoutShippingPrice(){if(!checkoutAddressReady())return '填写地址后计算';if(state.address!=='us')return '按目的地计算';return cartPricingInput().quantity>=3||state.first?'免费':'结账时计算';}
 function checkoutInput(key,label,options={}){const f=checkoutFields();return `<label class="checkout-field ${options.wide?'checkout-field-wide':''}" for="checkout-${key}"><span>${label}</span><input id="checkout-${key}" data-checkout-field="${key}" type="${options.type||'text'}" value="${esc(f[key]||'')}" ${options.required?'required':''} ${options.autocomplete?`autocomplete="${options.autocomplete}"`:''} ${options.inputmode?`inputmode="${options.inputmode}"`:''}></label>`;}
 function checkoutShippingSection(){
  const ready=checkoutAddressReady();
  return `<section class="checkout-shipping-panel" id="checkout-shipping-panel"><h2>Shipping method <span>配送方式</span></h2>${ready?`<div class="checkout-shipping-rate"><span><span class="checkout-selected-dot" aria-hidden="true"></span>标准配送</span><strong>${checkoutShippingPrice()}</strong></div>`:'<div class="checkout-shipping-placeholder">Enter your shipping address to view available shipping methods.<br><span>填写收货地址后显示可用配送方式。</span></div>'}</section>`;
 }
-function checkoutProductDiscountHTML(result){
- const rows=cartDiscountItems(result);if(!rows.length)return '';
+function checkoutProductDiscountHTML(result,gift=false){
+ const rows=cartDiscountItems(result);if(!gift&&!rows.length)return '';
  const icon='<svg class="checkout-discount-tag-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h8l10 10-8 8L3 11V3Z"/><circle cx="7" cy="7" r="1"/></svg>';
- return `<div class="checkout-product-discount-labels" aria-label="商品折扣">${rows.map(row=>`<div class="checkout-tag-discount-row">${icon}<span>${esc(row.name)} <span class="checkout-tag-discount-amount num">（−${money(row.amount)}）</span></span></div>`).join('')}</div>`;
+ const giftTag=gift?`<div class="checkout-tag-discount-row">${icon}<span>${FREE_GIFT_DISCOUNT_LABEL}</span></div>`:'';
+ const discountTags=rows.map(row=>`<div class="checkout-tag-discount-row">${icon}<span>${esc(row.name)} <span class="checkout-tag-discount-amount num">（−${money(row.amount)}）</span></span></div>`).join('');
+ return `<div class="checkout-product-discount-labels" aria-label="商品折扣">${giftTag}${discountTags}</div>`;
 }
 function checkoutSummaryProductHTML(item){
  const {line,result}=item,hasDiscount=result.chosen.total<result.subtotal;
- return `<div class="checkout-summary-product"><div class="checkout-summary-image"><img src="${esc(line.image)}" alt="${esc(line.name+'，'+line.color)}"><span>${line.quantity}</span></div><div class="checkout-product-description"><strong>${esc(line.englishName||line.name)}</strong><p>${esc(line.color)} / ${esc(line.size)}</p>${checkoutProductDiscountHTML(result)}</div><div class="checkout-product-price">${hasDiscount?`<del class="num" aria-label="商品原金额">${money(result.subtotal)}</del>`:''}<strong class="num" aria-label="${hasDiscount?'折后商品金额':'商品金额'}">${money(result.chosen.total)}</strong></div></div>`;
+ return `<div class="checkout-summary-product"><div class="checkout-summary-image"><img src="${esc(line.image)}" alt="${esc(line.name+'，'+line.color)}"><span>${line.quantity}</span></div><div class="checkout-product-description"><strong>${esc(line.englishName||line.name)}</strong><p>${esc(line.color)} / ${esc(line.size)}</p>${checkoutProductDiscountHTML(result,line.gift&&result.chosen.total===0)}</div><div class="checkout-product-price">${hasDiscount?`<del class="num" aria-label="商品原金额">${money(result.subtotal)}</del>`:''}<strong class="num" aria-label="${hasDiscount?'折后商品金额':'商品金额'}">${money(result.chosen.total)}</strong></div></div>`;
+}
+function checkoutGiftOffers(){
+ if(!isThanksgivingVersion())return [];
+ return state.checkoutCartGiftOffer&&cartHasOnlyFreeGifts()
+  ? [state.checkoutCartGiftOffer]
+  : thanksgivingGiftRedemptions;
+}
+function checkoutGiftOfferHTML(){
+ const gifts=checkoutGiftOffers();
+ if(!gifts.length)return '';
+ const options=(values,selected)=>values.map(value=>`<option value="${esc(value)}" ${value===selected?'selected':''}>${esc(value)}</option>`).join('');
+ return `<section class="checkout-gift-offer" aria-labelledby="checkout-gift-offer-title">
+  <h2 id="checkout-gift-offer-title" lang="zh-CN">您有免费礼品可加购</h2>
+  ${gifts.map(gift=>`<article class="checkout-gift-item" data-checkout-gift="${gift.id}">
+   <div class="checkout-gift-product">
+    <img src="${esc(gift.image)}" alt="">
+    <div><h3>${esc(gift.name)}</h3><strong class="num">$0</strong></div>
+   </div>
+   <div class="checkout-gift-controls">
+    <label class="checkout-field"><span>Color</span><select name="color" data-checkout-gift-option>${options(gift.colors,gift.color)}</select></label>
+    <label class="checkout-field"><span>Size</span><select name="size" data-checkout-gift-option>${options(gift.sizes,gift.size)}</select></label>
+    <button type="button" class="checkout-gift-add" data-checkout-gift-add aria-label="Add ${esc(gift.name)}">Add</button>
+   </div>
+  </article>`).join('')}
+ </section>`;
 }
 function checkoutOrderSummary(){
  const result=cartResult(),f=checkoutFields();
- return `<div class="checkout-order-summary" id="checkout-order-summary"><h2 class="sr-only">Order summary</h2>
+ return `<div class="checkout-order-summary" id="checkout-order-summary" tabindex="-1"><h2 class="sr-only">Order summary</h2>
  ${cartAllocatedLines(result).map(checkoutSummaryProductHTML).join('')}
  <div class="checkout-discount-code"><label class="checkout-field" for="checkout-discountCode"><span>Discount code or gift card</span><input id="checkout-discountCode" data-checkout-field="discountCode" value="${esc(f.discountCode)}"></label><button class="checkout-apply" data-action="checkout-apply-code" ${f.discountCode.trim()?'':'disabled'}>Apply</button></div>
  ${result.chosen.id==='coupon'?'<p class="checkout-coupon-preview">本期不做线上积分优惠券的核销，此处仅为效果展示</p>':''}
  <div class="checkout-cost-lines"><div class="checkout-summary-subtotal"><span>Subtotal · ${state.qty} 件</span><span class="num" aria-label="商品应付小计">${money(result.chosen.total)}</span></div><div><span>Shipping</span><span>${checkoutShippingPrice()}</span></div><div><span>Taxes</span><span>付款前核算</span></div>
- <div class="checkout-total"><strong>Total</strong><span><small>USD</small> <strong class="num">${money(result.chosen.total)}</strong></span></div><div class="checkout-earned-points" aria-live="polite"><span>预计可得积分</span><strong class="num">${number(result.points)} 积分</strong></div></div></div>`;
+ <div class="checkout-total"><strong>Total</strong><span><small>USD</small> <strong class="num">${money(result.chosen.total)}</strong></span></div>
+ <div class="checkout-earned-points" aria-live="polite"><span>预计可得积分</span><strong class="num">${number(result.points)} 积分</strong></div>
+ ${checkoutGiftOfferHTML()}</div></div>`;
 }
 function checkoutPage(){
  checkoutSyncDelivery();normalizeCartCouponSelection();
@@ -579,7 +669,21 @@ function checkoutPage(){
  const region=f.country==='US'?`<label class="checkout-field" for="checkout-region"><span>State</span><select id="checkout-region" data-checkout-field="region" required><option value="">Select a state</option>${CHECKOUT_US_STATES.map(([code,name])=>`<option value="${code}" ${f.region===code?'selected':''}>${name}</option>`).join('')}</select></label>`:checkoutInput('region','State / Province',{required:true,autocomplete:'address-level1'});
  return `<div class="checkout-page"><header class="checkout-header"><button class="checkout-brand" data-action="cart-back-collection" aria-label="返回官网">FIOBOC</button><button class="checkout-bag" data-action="checkout-back-cart" aria-label="返回购物车"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 7h12l1 14H5L6 7Z"/><path d="M9 8V5a3 3 0 0 1 6 0v3"/></svg></button></header><div class="checkout-layout"><main class="checkout-main" id="checkout-main"><div class="checkout-express"><p>Express checkout</p><div class="checkout-express-buttons"><button class="checkout-shop" data-action="checkout-express" data-id="Shop Pay">shop</button><button class="checkout-paypal" data-action="checkout-express" data-id="PayPal">PayPal</button><button class="checkout-gpay" data-action="checkout-express" data-id="Google Pay"><span>G</span> Pay</button></div><div class="checkout-or"><span>OR</span></div></div><form id="fioboc-checkout-form" novalidate><section class="checkout-contact"><div class="checkout-section-heading"><h2>Contact</h2><button type="button" class="link" data-action="checkout-account">${state.joined?'Account':'Sign in'}</button></div>${checkoutInput('email','Email',{type:'email',required:true,autocomplete:'email'})}<label class="checkout-check"><input type="checkbox" data-checkout-field="emailOffers" ${f.emailOffers?'checked':''}><span>Email me with news and offers</span></label></section><section class="checkout-delivery"><div class="checkout-section-heading"><h2>Delivery</h2><button type="button" class="link checkout-example" data-action="checkout-example-address">使用示例地址</button></div><div class="checkout-fields"><label class="checkout-field checkout-field-wide" for="checkout-country"><span>Country/Region</span><select id="checkout-country" data-checkout-field="country">${countryOptions.map(([code,name])=>`<option value="${code}" ${f.country===code?'selected':''}>${name}</option>`).join('')}</select></label>${checkoutInput('firstName','First name',{required:true,autocomplete:'given-name'})}${checkoutInput('lastName','Last name',{required:true,autocomplete:'family-name'})}${checkoutInput('street','Address',{required:true,wide:true,autocomplete:'address-line1'})}${checkoutInput('apartment','Apartment, suite, etc. (optional)',{wide:true,autocomplete:'address-line2'})}<div class="checkout-address-row">${checkoutInput('city','City',{required:true,autocomplete:'address-level2'})}${region}${checkoutInput('postal','ZIP code',{required:true,autocomplete:'postal-code'})}</div>${checkoutInput('phone','Phone (optional)',{type:'tel',wide:true,autocomplete:'tel'})}</div><label class="checkout-check"><input type="checkbox" data-checkout-field="textOffers" ${f.textOffers?'checked':''}><span>Text me with news and offers</span></label></section>${checkoutShippingSection()}<section class="checkout-payment"><h2>Payment</h2><p class="checkout-payment-caption">选择付款方式</p><div class="checkout-payment-options"><label class="checkout-payment-choice"><input type="radio" name="checkout-payment-method" data-checkout-field="payment" value="card" ${f.payment==='card'?'checked':''}><strong>Credit card</strong><span class="checkout-card-brands">VISA &nbsp; Mastercard &nbsp; AMEX</span></label>${f.payment==='card'?'<div class="checkout-payment-fields"><label class="checkout-field checkout-field-wide"><span>Card number</span><input disabled placeholder="•••• •••• •••• ••••" aria-label="卡号展示"></label><label class="checkout-field"><span>Expiration date</span><input disabled placeholder="MM / YY" aria-label="有效期展示"></label><label class="checkout-field"><span>Security code</span><input disabled placeholder="•••" aria-label="安全码展示"></label><label class="checkout-field checkout-field-wide"><span>Name on card</span><input disabled placeholder="Name on card" aria-label="持卡人名称展示"></label></div>':''}<label class="checkout-payment-choice"><input type="radio" name="checkout-payment-method" data-checkout-field="payment" value="paypal" ${f.payment==='paypal'?'checked':''}><strong class="checkout-paypal-name">PayPal</strong></label></div><p class="checkout-billing-note">Billing address · Same as shipping address</p></section><div id="checkout-form-status" class="checkout-form-status" role="status">${esc(problem)}</div><button type="button" class="checkout-pay-button" id="checkout-pay-button" data-action="checkout-pay" ${problem?'disabled':''}>Pay now</button><p class="checkout-payment-demo">原型演示，不会产生真实订单或扣款。</p></form><footer class="checkout-footer"><button class="link" data-action="refund-policy">Refund policy</button><button class="link" data-action="checkout-policy" data-id="privacy">Privacy policy</button><button class="link" data-action="checkout-policy" data-id="terms">Terms of service</button></footer></main><aside class="checkout-sidebar" aria-label="Order summary"><button class="checkout-summary-toggle" data-action="checkout-summary-toggle" aria-expanded="${!!state.checkoutSummaryOpen}"><span>Order summary ${state.checkoutSummaryOpen?'⌃':'⌄'}</span><strong>${money(cartResult().chosen.total)}</strong></button><div id="checkout-summary-wrap" ${compact&&!state.checkoutSummaryOpen?'hidden':''}>${checkoutOrderSummary()}</div></aside></div></div>`;
 }
-function checkoutOpenPage(){role='storefront';page='checkout';cartView='checkout';cartOpen=false;render();document.getElementById('stage')?.scrollIntoView({block:'start'});}
+function checkoutOpenPage(){
+ role='storefront';
+ page='checkout';
+ cartView='checkout';
+ cartOpen=false;
+ state.checkoutCartGiftOffer=null;
+ if(isThanksgivingVersion()&&cartHasOnlyFreeGifts()){
+  const original=cartLineItems()[0];
+  state.checkoutCartGiftOffer={...original,id:'checkout-cart-gift',cartLineId:original.id,keepOriginalAtListPrice:true,
+   colors:original.colors||[original.color],sizes:original.sizes||[original.size]};
+  state.checkoutSummaryOpen=true;
+ }
+ render();
+ document.getElementById('stage')?.scrollIntoView({block:'start'});
+}
 function checkoutRefreshBlocks(){
  if(cartView!=='checkout')return;
  checkoutSyncDelivery();normalizeCartCouponSelection();
@@ -611,10 +715,32 @@ function productDetailPage(){
  const highestMemberRate=TIERS.at(-1).base;
  const guestMemberOffer=state.accountLoggedIn
   ? ''
-  : `<div class="product-main-price product-member-price"><strong class="num">低至 ${money(round(price*(1-highestMemberRate)))}</strong><span class="product-price-badge product-member-discount">会员基础折扣最高 ${round(highestMemberRate*100)}%</span><button type="button" class="link" ${document.body.dataset.projectVersion==='1.1.0'?'data-action="storefront-sign-in" aria-haspopup="dialog"':'data-action="auth-open" data-id="signup"'}>立即加入会员</button></div>`;
- return `<main class="product-detail-page" id="main-content"><nav class="product-breadcrumb" aria-label="商品导航"><button class="link" data-action="cart-back-collection">首页</button><span>›</span><span>长袖上衣</span><span>›</span><span>${HOODIE_PRODUCT.name}</span></nav><div class="product-detail-layout"><section class="product-gallery" aria-label="白色连帽衫商品图片">${HOODIE_PRODUCT.images.map((src,index)=>`<img src="${src}" alt="白色莫代尔混纺长袖连帽衫${['正面','背面','细节','近景'][index]}" ${index>1?'loading="lazy"':''}>`).join('')}</section><section class="product-purchase-panel"><p class="product-fabric-label">LENZING™ Modal</p><h1>${HOODIE_PRODUCT.name}</h1><p class="product-english-name">${HOODIE_PRODUCT.englishName}</p><div class="product-price-review"><div class="product-current-price"><div class="product-main-price product-catalog-price"><strong class="num">${money(price)}</strong>${catalogDiscount}</div>${memberPrice}${guestMemberOffer}</div><div class="product-main-price product-delivered-price"><strong class="num">${money(unit.chosen.total)}</strong>${unit.chosen.total<unit.subtotal?`<del>${money(unit.subtotal)}</del>`:''}</div><span class="product-review" aria-label="评分 5 分，25 条评论">★★★★★ <small>25 条评论</small></span></div><div class="product-options"><div class="product-color-heading"><strong>主色调：</strong><span>白色</span></div><span class="product-white-swatch" aria-label="已选白色"></span><div class="product-size-heading"><strong>尺码：${detail.size}</strong><button class="link" data-action="product-size-guide">尺码指南</button></div><div class="product-sizes" aria-label="选择尺码">${HOODIE_PRODUCT.sizes.map(size=>`<button data-action="product-size" data-id="${size}" class="${detail.size===size?'selected':''}" aria-pressed="${detail.size===size}">${size}</button>`).join('')}</div></div><div class="product-bundle-section"><h2>买越多，省越多</h2><div class="product-bundles" role="radiogroup" aria-label="选择购买件数">${[1,3,6,12].map(productBundleHTML).join('')}</div></div><div class="product-payable" aria-live="polite"><span>所选商品应付小计 · ${detail.quantity} 件</span><strong class="num">${money(result.chosen.total)}</strong></div><button class="btn product-add-to-cart" data-action="product-add-cart" ${canAdd?'':'disabled'}>添加到购物车</button>${canAdd?'':'<p class="product-limit-message">当前购物车最多容纳 24 件，请先调整购物车数量。</p>'}${document.body.dataset.projectVersion==='1.1.0'?'':`<section class="product-points-banner" aria-live="polite"><div><span>${state.joined?'预计可得积分':'加入会员后预计可得积分'}</span><strong class="num">${number(result.points)} 积分</strong></div><p>${pointsCalculationHTML(result)}</p><small>按当前所选商品单独结算估算，最终金额与积分以结账页为准。<br>发货后 30 天可用；不含税费、运费与礼品卡金额。</small></section>`}<div class="product-information"><details><summary>商品特点</summary><p>柔软轻盈的莫代尔混纺面料，四向弹力；长袖连帽剪裁，侧开叉下摆。</p></details><details><summary>面料与护理</summary><p>42% 莫代尔、49% 聚酯纤维、9% 氨纶。冷水轻柔机洗，与相近颜色衣物同洗；勿漂白。</p></details><details><summary>配送与退货</summary><p>美国本土现货订单购买 3 件及以上可享标准免邮；配送升级服务可在结账页兑换使用。具体配送与退货条件以官网政策为准。</p><button class="link" data-action="product-source">查看官网商品与政策</button></details></div></section></div></main>`;
+  : `<div class="product-main-price product-member-price"><strong class="num">低至 ${money(round(price*(1-highestMemberRate)))}</strong><span class="product-price-badge product-member-discount">会员基础折扣最高 ${round(highestMemberRate*100)}%</span><button type="button" class="link" ${isCurrentPrototypeVersion()?'data-action="storefront-sign-in" aria-haspopup="dialog"':'data-action="auth-open" data-id="signup"'}>立即加入会员</button></div>`;
+ return `<main class="product-detail-page" id="main-content"><nav class="product-breadcrumb" aria-label="商品导航"><button class="link" data-action="cart-back-collection">首页</button><span>›</span><span>长袖上衣</span><span>›</span><span>${HOODIE_PRODUCT.name}</span></nav><div class="product-detail-layout"><section class="product-gallery" aria-label="白色连帽衫商品图片">${HOODIE_PRODUCT.images.map((src,index)=>`<img src="${src}" alt="白色莫代尔混纺长袖连帽衫${['正面','背面','细节','近景'][index]}" ${index>1?'loading="lazy"':''}>`).join('')}</section><section class="product-purchase-panel"><p class="product-fabric-label">LENZING™ Modal</p><h1>${HOODIE_PRODUCT.name}</h1><p class="product-english-name">${HOODIE_PRODUCT.englishName}</p><div class="product-price-review"><div class="product-current-price"><div class="product-main-price product-catalog-price"><strong class="num">${money(price)}</strong>${catalogDiscount}</div>${memberPrice}${guestMemberOffer}</div><div class="product-main-price product-delivered-price"><strong class="num">${money(unit.chosen.total)}</strong>${unit.chosen.total<unit.subtotal?`<del>${money(unit.subtotal)}</del>`:''}</div><span class="product-review" aria-label="评分 5 分，25 条评论">★★★★★ <small>25 条评论</small></span></div><div class="product-options"><div class="product-color-heading"><strong>主色调：</strong><span>白色</span></div><span class="product-white-swatch" aria-label="已选白色"></span><div class="product-size-heading"><strong>尺码：${detail.size}</strong><button class="link" data-action="product-size-guide">尺码指南</button></div><div class="product-sizes" aria-label="选择尺码">${HOODIE_PRODUCT.sizes.map(size=>`<button data-action="product-size" data-id="${size}" class="${detail.size===size?'selected':''}" aria-pressed="${detail.size===size}">${size}</button>`).join('')}</div></div><div class="product-bundle-section"><h2>买越多，省越多</h2><div class="product-bundles" role="radiogroup" aria-label="选择购买件数">${[1,3,6,12].map(productBundleHTML).join('')}</div></div><div class="product-payable" aria-live="polite"><span>所选商品应付小计 · ${detail.quantity} 件</span><strong class="num">${money(result.chosen.total)}</strong></div><button class="btn product-add-to-cart" data-action="product-add-cart" ${canAdd?'':'disabled'}>添加到购物车</button>${canAdd?'':'<p class="product-limit-message">当前购物车最多容纳 24 件，请先调整购物车数量。</p>'}${isCurrentPrototypeVersion()?'':`<section class="product-points-banner" aria-live="polite"><div><span>${state.joined?'预计可得积分':'加入会员后预计可得积分'}</span><strong class="num">${number(result.points)} 积分</strong></div><p>${pointsCalculationHTML(result)}</p><small>按当前所选商品单独结算估算，最终金额与积分以结账页为准。<br>发货后 30 天可用；不含税费、运费与礼品卡金额。</small></section>`}<div class="product-information"><details><summary>商品特点</summary><p>柔软轻盈的莫代尔混纺面料，四向弹力；长袖连帽剪裁，侧开叉下摆。</p></details><details><summary>面料与护理</summary><p>42% 莫代尔、49% 聚酯纤维、9% 氨纶。冷水轻柔机洗，与相近颜色衣物同洗；勿漂白。</p></details><details><summary>配送与退货</summary><p>美国本土现货订单购买 3 件及以上可享标准免邮；配送升级服务可在结账页兑换使用。具体配送与退货条件以官网政策为准。</p><button class="link" data-action="product-source">查看官网商品与政策</button></details></div></section></div></main>`;
 }
 function productDetailOpen(){role='storefront';page='checkout';cartView='product';cartOpen=false;render();document.getElementById('stage')?.scrollIntoView({block:'start'});}
+function listPricePoloCartLine({name,color,size,image,quantity=1}){
+ return {id:`polo-list-${color.toLowerCase()}-${size.toLowerCase()}`,product:'polo',name,color,size,image,quantity,price:POLO_LIST_PRICE,atListPrice:true};
+}
+function addRedeemedGiftToCart({name,color,size,image,colors,sizes,cartLineId,keepOriginalAtListPrice}){
+ const lines=cartLineItems().map(line=>({...line}));
+ if(cartLineId){
+  const index=lines.findIndex(line=>line.id===cartLineId);
+  if(index<0)return false;
+  const original=lines[index];
+  if(keepOriginalAtListPrice)lines[index]=listPricePoloCartLine(original);
+  else if(original.quantity>1)original.quantity--;
+  else lines.splice(index,1);
+ }
+ if(lines.reduce((sum,line)=>sum+line.quantity,0)>=24)return false;
+ const id=`gift-polo-${color.toLowerCase()}-${size.toLowerCase()}`;
+ const existing=lines.find(line=>line.id===id);
+ if(existing)existing.quantity++;
+ else lines.push({id,product:'polo',gift:true,name,color,size,colors,sizes,price:0,quantity:1,image});
+ state.cartItems=lines;
+ state.qty=lines.reduce((sum,line)=>sum+line.quantity,0);
+ return true;
+}
 function productAddToCart(){
  const detail=productDetailState();if(state.qty+detail.quantity>24){toast('请先调整购物车数量。');return false;}
  const lines=cartLineItems().map(line=>({...line}));
@@ -625,26 +751,69 @@ function productAddToCart(){
  }
  state.cartItems=lines;state.qty=lines.reduce((sum,line)=>sum+line.quantity,0);normalizeCartCouponSelection();role='storefront';page='checkout';cartView='product';cartOpen=true;render();document.getElementById('stage')?.scrollIntoView({block:'start'});toast(`已添加 ${detail.quantity} 件${HOODIE_PRODUCT.name}。`);return true;
 }
-function cartCollection(){const products=[['modal-black','莫代尔混纺短袖T恤：修身款',56],['polo-white','Weekend Performance Essential Polo Tee',70],['crew-grey','Weekend Performance Crew Neck Tee',62],['hoodie-white','莫代尔混纺短袖连帽上衣',66]];return `<main class="cart-collection" id="main-content"><div class="collection-breadcrumb">家 &nbsp;›&nbsp; 基本款短袖上衣</div><h1>基本款短袖上衣</h1><div class="collection-toolbar"><div><button data-phase1="false" aria-disabled="true">筛选</button><button data-phase1="false" aria-disabled="true">精选 &nbsp;⌄</button></div><span>86 种产品</span></div><div class="collection-grid">${products.map((p,i)=>`<article><div class="collection-photo"><img src="${CART_INLINE_IMAGES[p[0]]}" alt="${esc(p[1])}">${i===1?'<span class="collection-new">新品上市</span>':''}<span class="collection-heart" aria-hidden="true">♡</span></div><div class="collection-product-title">${p[1]}</div><strong class="num">${money(p[2])}</strong></article>`).join('')}</div></main>`;}
-function cartProgress(){const qty=state.qty,next=qty<3?3:qty<6?6:qty<12?12:null,percent=qty<3?5:qty<6?10:20;return `<section class="cart-progress"><strong>${next?`再加购 ${next-qty} 件商品可 <u>节省 ${percent}%</u>`:'已享 12 件满件优惠 · 节省 20%'}</strong><div class="cart-progress-track"><span style="width:${Math.min(100,qty/12*100)}%"></span>${[3,6,12].map(n=>`<i class="${qty>=n?'reached':''}" style="left:${n/12*100}%"></i>`).join('')}</div><div class="cart-progress-labels"><span>3 件 · 免运费</span><span>6 件</span><span>12 件</span></div></section>`;}
-function cartDrawer(){
- const holder=document.createElement('div');holder.innerHTML=checkout();
- const firstColumn=holder.querySelector('.checkout-grid>div');
- const summary=holder.querySelector('.summary');
- const summaryButton=summary.querySelector('[data-action="checkout-open"]');
- summaryButton.outerHTML='<button class="btn cart-view-button" data-action="checkout-open">去结账</button><button class="link cart-fullpage-link" data-action="cart-view-page">查看购物车</button>';
- const productHTML=[...firstColumn.querySelectorAll('.product')].map(product=>product.outerHTML).join('');
- return `<div class="cart-overlay" data-action="cart-close" aria-hidden="true"></div><section class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title"><header class="cart-drawer-heading"><h2 id="cart-drawer-title">您的购物车 <span>（${state.qty}）</span></h2><button class="cart-close" data-action="cart-close" aria-label="关闭购物车">×</button></header><div class="cart-drawer-scroll"><div class="cart-newcustomer"><span aria-hidden="true">♧</span>新客户享免费送货和保障。 <button class="link" data-phase1="false" aria-disabled="true">立即领取！</button></div>${state.qty?`${cartProgress()}<div class="cart-product-section">${productHTML}</div><section class="cart-recommendations"><div class="row between"><h3>您可能也喜欢</h3><span aria-hidden="true">‹ &nbsp; ›</span></div><div class="cart-recommendation-grid">${[['polo-white','Weekend Polo Tee',70],['hoodie-white','短袖连帽上衣',66]].map(p=>`<article><img src="${CART_INLINE_IMAGES[p[0]]}" alt="${p[1]}"><div><p>${p[1]}</p><strong class="num">${money(p[2])}</strong></div></article>`).join('')}</div></section>`:'<div class="cart-empty"><h3>您的购物车是空的</h3><p>继续寻找下一件舒适好衣。</p><button class="btn" data-action="cart-restore">继续购物</button></div>'}</div>${state.qty?`<footer class="cart-drawer-footer">${summary.outerHTML}</footer>`:''}</section>`;
+function cartCollection(bestSellers=false){
+ const products=[
+  ['modal-black',bestSellers?'Modal Blend Short Sleeve Tee: Slim Fit':'莫代尔混纺短袖T恤：修身款',56],
+  ['polo-white','Weekend Performance Essential Polo Tee',POLO_LIST_PRICE],
+  ['crew-grey','Weekend Performance Crew Neck Tee',62],
+  ['hoodie-white',bestSellers?'Modal Blend Short Sleeve Hoodie':'莫代尔混纺短袖连帽上衣',66]
+ ];
+ return `<main class="cart-collection${bestSellers?' best-sellers-collection':''}" id="main-content"${bestSellers?' lang="en"':''}>
+  ${bestSellers?'':'<div class="collection-breadcrumb">家 &nbsp;›&nbsp; 基本款短袖上衣</div>'}
+  <h1>${bestSellers?'Best Sellers':'基本款短袖上衣'}</h1>
+  <div class="collection-toolbar">
+   <div><button data-phase1="false" aria-disabled="true">${bestSellers?'Filter':'筛选'}</button><button data-phase1="false" aria-disabled="true">${bestSellers?'Featured':'精选'} &nbsp;⌄</button></div>
+   ${bestSellers?'':'<span>86 种产品</span>'}
+  </div>
+  <div class="collection-grid">${products.map(([image,name,price],index)=>`<article><div class="collection-photo"><img src="${CART_INLINE_IMAGES[image]}" alt="">${index===1?`<span class="collection-new">${bestSellers?'New':'新品上市'}</span>`:''}<span class="collection-heart" aria-hidden="true">♡</span></div><div class="collection-product-title">${esc(name)}</div><strong class="num">${money(price)}</strong></article>`).join('')}</div>
+ </main>`;
+}
+function cartProgress(english=false){
+ const qty=cartPricingInput().quantity;
+ const next=qty<3?3:qty<6?6:qty<12?12:null;
+ const percent=qty<3?5:qty<6?10:20;
+ const remaining=next===null?0:next-qty;
+ const headline=english
+  ? (next?`Add ${remaining} more ${remaining===1?'item':'items'} to <u>save ${percent}%</u>`:'You’ve unlocked 20% off')
+  : (next?`再加购 ${remaining} 件商品可 <u>节省 ${percent}%</u>`:'已享 12 件满件优惠 · 节省 20%');
+ return `<section class="cart-progress"><strong>${headline}</strong><div class="cart-progress-track"><span style="width:${Math.min(100,qty/12*100)}%"></span>${[3,6,12].map(n=>`<i class="${qty>=n?'reached':''}" style="left:${n/12*100}%"></i>`).join('')}</div><div class="cart-progress-labels"><span>${english?'3 items · Free shipping':'3 件 · 免运费'}</span><span>${english?'6 items':'6 件'}</span><span>${english?'12 items':'12 件'}</span></div></section>`;
+}
+function cartDrawer(english=false){
+ const result=cartResult();
+ const recommendations=[['polo-white','Weekend Polo Tee',POLO_LIST_PRICE],['hoodie-white',english?'Short Sleeve Hoodie':'短袖连帽上衣',66]];
+ return `<div class="cart-overlay" data-action="cart-close" aria-hidden="true"></div>
+ <section class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-drawer-title"${english?' lang="en"':''}>
+  <header class="cart-drawer-heading">
+   <h2 id="cart-drawer-title">${english?'Your cart':'您的购物车'} <span>${english?`(${state.qty})`:`（${state.qty}）`}</span></h2>
+   <button class="cart-close" data-action="cart-close" aria-label="${english?'Close cart':'关闭购物车'}">×</button>
+  </header>
+  <div class="cart-drawer-scroll">
+   <div class="cart-newcustomer"><span aria-hidden="true">♧</span>${english?'New customer offer: extra 25% off Black Friday picks.':'新客户享免费送货和保障。'} <button class="link" data-phase1="false" aria-disabled="true">${english?'CLAIM!':'立即领取！'}</button></div>
+   ${state.qty?`${cartProgress(english)}
+    <div class="cart-product-section">${cartProductListHTML(result,english)}</div>
+    <section class="cart-recommendations">
+     <div class="row between"><h3>${english?'You may also like':'您可能也喜欢'}</h3><span aria-hidden="true">‹ &nbsp; ›</span></div>
+     <div class="cart-recommendation-grid">${recommendations.map(([image,name,price])=>`<article><img src="${CART_INLINE_IMAGES[image]}" alt=""><div><p>${esc(name)}</p><strong class="num">${money(price)}</strong></div></article>`).join('')}</div>
+    </section>`:`<div class="cart-empty"><h3>${english?'Your cart is empty':'您的购物车是空的'}</h3><p>${english?'Explore our best sellers.':'继续寻找下一件舒适好衣。'}</p><button class="btn" data-action="${english?'cart-close':'cart-restore'}">${english?'Continue shopping':'继续购物'}</button></div>`}
+  </div>
+  ${state.qty?`<footer class="cart-drawer-footer">${cartSummaryHTML(result,{drawer:true,english})}</footer>`:''}
+ </section>`;
 }
 nativeStorefrontShell=function(content){
  if(cartView==='checkout')return checkoutPage();
- let html=cartPreviousShell(cartView==='product'?productDetailPage():cartView==='page'&&state.qty?content:cartCollection());
- html=html.replace('FREE SHIPPING ON 3 ITEMS+ & EASY RETURNS.','购买 3 件以上商品即可享受免运费，并可轻松退货。');
- [['NEW ARRIVAL','新品上市'],['BEST SELLERS','畅销榜'],['FIT GUIDE','尺码指南'],['WOMEN','女性'],['MEN','男士'],['SALE','销售']].forEach(([a,b])=>html=html.replace(`>${a}</a>`,`>${b}</a>`));
+ const english=isThanksgivingVersion();
+ const bestSellers=english&&cartView==='collection';
+ let html=cartPreviousShell(cartView==='product'?productDetailPage():cartView==='page'&&state.qty?content:cartCollection(bestSellers));
+ if(bestSellers){
+  html=html.replace(/(<a href="https:\/\/www\.fioboc\.com\/collections\/best-selling-products")/,'$1 aria-current="page"');
+ }else if(!english){
+  html=html.replace('FREE SHIPPING ON 3 ITEMS+ & EASY RETURNS.','购买 3 件以上商品即可享受免运费，并可轻松退货。');
+  [['NEW ARRIVAL','新品上市'],['BEST SELLERS','畅销榜'],['FIT GUIDE','尺码指南'],['WOMEN','女性'],['MEN','男士'],['SALE','销售']].forEach(([a,b])=>html=html.replace(`>${a}</a>`,`>${b}</a>`));
+ }
  html=html.replace('<button data-action="store-cart" aria-label="Cart">',`<button class="cart-entry" data-action="store-cart" aria-label="购物车，${state.qty} 件商品" aria-expanded="${cartOpen}"><span class="cart-badge">${state.qty}</span>`);
  if(cartView==='collection'||cartView==='product')html=html.replace('<main class="store-main" id="main-content">',`<div class="${cartView==='product'?'store-product-wrap':'store-collection-wrap'}">`).replace('</main><footer class="store-footer">','</div><footer class="store-footer">');
  else html=html.replace('<main class="store-main" id="main-content">','<main class="store-main" id="main-content"><button class="link cart-back" data-action="cart-back-collection">← 继续购物</button>');
- return `<div class="cart-store-scene ${cartView==='product'?'product-store-scene':''}">${html}${cartOpen?cartDrawer():''}</div>`;
+ return `<div class="cart-store-scene${bestSellers?' best-sellers-store-scene':''}${cartView==='product'?' product-store-scene':''}">${html}${cartOpen?cartDrawer(english):''}</div>`;
 };
 function updateCartHeight(){const scene=document.querySelector('.cart-store-scene');if(scene){const top=Math.max(0,document.getElementById('stage').getBoundingClientRect().top);scene.style.setProperty('--cart-height',`${Math.max(400,window.innerHeight-top)}px`);}}
 render=function(){
@@ -707,7 +876,7 @@ document.addEventListener('click',event=>{
  if(!['checkout-open','checkout-back-cart','checkout-example-address','checkout-account','checkout-pay','checkout-summary-toggle','checkout-express','checkout-apply-code','checkout-policy'].includes(action))return;
  event.preventDefault();event.stopImmediatePropagation();
  if(action==='checkout-open')checkoutOpenPage();
- else if(action==='checkout-back-cart'){role='storefront';page='checkout';cartView='page';cartOpen=false;render();}
+ else if(action==='checkout-back-cart'){role='storefront';page='checkout';cartOpen=isThanksgivingVersion();cartView=cartOpen?'collection':'page';render();if(cartOpen)document.querySelector('.cart-close')?.focus();}
  else if(action==='checkout-example-address'){Object.assign(checkoutFields(),{country:'US',firstName:checkoutFields().firstName||'Demo',lastName:checkoutFields().lastName||'Member',street:'123 Demo Street',city:'Los Angeles',region:'CA',postal:'90012',email:checkoutFields().email||'member@example.com'});checkoutSyncDelivery();render();toast('已填入虚构示例地址。');}
  else if(action==='checkout-account'){role='customer';page=state.joined?'overview':'join';render();}
  else if(action==='checkout-pay')checkoutPay();
@@ -1084,6 +1253,16 @@ document.addEventListener('click',event=>{
     seen.add(element);found.push({element,title,note,kind});
    }
   };
+  if(document.body.dataset.projectVersion==='1.2.0'){
+   add('[data-reward-catalog]:not(:disabled)','Browse All Rewards','从会员中心打开 Redeem Rewards。','新增');
+   add('#return-gifts-banner','Free Gifts 横幅','在 All rewards 顶部点击 Explore gifts，直接切换到 Free Gifts。','新增');
+   add('#return-catalog-gifts','Free Gifts','位于 All rewards 右侧，筛选感恩节礼品。','新增');
+   add('.return-gift-card','100 积分兑换礼品','点击商品图片查看大图，展开 Terms & Conditions 查看兑换条款，确认兑换后扣除 100 积分。','新增');
+   add('#return-gift-variants[open]','选择礼品规格','选定颜色与尺码后，可仅兑换或兑换并加购。','新增');
+   add('.checkout-gift-offer','结账页免费礼品加购','在预计可得积分下方选择规格。点击 Add 后加入一件免费礼品，或对已有的可兑换商品应用免费折扣。','调整');
+   add('.best-sellers-store-scene .cart-drawer','热销页购物车','购物车以右侧抽屉打开，关闭后继续浏览 Best Sellers。','调整');
+   return {title:'V1.2.0 · 感恩节活动需求',regions:found};
+  }
   if(document.body.dataset.projectVersion==='1.1.0'){
    if(document.body.dataset.currentSurface==='thankyou'){
     add('#current-thank-you .v110-rewards','结账感谢页 · Fioboc Rewards','沿用参考图2：预计本单积分、全部发货30天后入账、当前会员等级与基础折扣、已入账消费进度及会员中心入口。非会员主动加入；待入账金额不进入进度条。','新增');
@@ -1220,7 +1399,7 @@ document.addEventListener('click',event=>{
  }
  function refresh(){
   frame=0;if(!enabled)return;
-  const anchor=document.querySelector(document.body.dataset.projectVersion==='1.1.0'?'.reviewbar':'.tools');
+  const anchor=document.querySelector(isCurrentPrototypeVersion()?'.reviewbar':'.tools');
   if(anchor.nextElementSibling!==summary)anchor.after(summary);
   const current=collect();regions=current.regions;
   const nextSignature=JSON.stringify([current.title,current.empty,regions.map(({title,note,kind})=>[title,note,kind])]);

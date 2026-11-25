@@ -1,5 +1,11 @@
+function isCurrentPrototypeVersion(version = document.body.dataset.projectVersion) {
+  return version === '1.1.0' || version === '1.2.0';
+}
+
+const thanksgivingGiftRedemptions = [];
 
 (() => {
+  const thanksgivingVersion = '1.2.0';
   const selector = document.getElementById('project-version');
   const current = document.getElementById('current-prototype');
   const delivered = document.getElementById('delivered-prototype');
@@ -9,10 +15,38 @@
   const orderTab = document.getElementById('current-order-tab');
   const thankYouTab = document.getElementById('current-thank-you-tab');
   const memberContent = document.getElementById('current-member-content');
+  const memberHome = memberContent.querySelectorAll('.return-member-overview, .return-member-rewards');
+  const rewardCatalog = document.getElementById('return-reward-catalog');
+  const catalogEntries = memberContent.querySelectorAll('[data-reward-catalog]');
+  const catalogTabs = [...document.querySelectorAll('#return-catalog-tabs [role="tab"]')];
+  const catalogResults = document.getElementById('return-catalog-results');
+  const giftsBanner = document.getElementById('return-gifts-banner');
+  const giftsTab = document.getElementById('return-catalog-gifts');
+  const giftCard = catalogResults.querySelector('.return-gift-card');
+  const giftPreview = document.getElementById('return-gift-preview');
+  const giftVariantDialog = document.getElementById('return-gift-variants');
+  const giftVariantForm = document.getElementById('return-gift-variants-form');
+  const giftVariantError = document.getElementById('return-gift-variants-error');
+  const giftRedeem = document.getElementById('return-gift-redeem');
+  const giftStatus = document.getElementById('return-gift-status');
+  const giftCheckoutLink = document.getElementById('return-gift-view-checkout');
+  const startingPoints = 4500;
+  const giftCost = 100;
+  let giftBalance = startingPoints;
+  let giftRedemptionSequence = 0;
   const orderDetail = document.getElementById('current-order-detail');
   const thankYouContent = document.getElementById('current-thank-you');
   const demoScenario = document.getElementById('current-demo-scenario');
+  const giftScenarioOptions = demoScenario.innerHTML;
+  const previousScenarioOptions = document.getElementById('v110-demo-scenarios').innerHTML;
+  const giftScenarios = {
+    'gift-only-cart': {quantity: 0, action: 'cart'},
+    'gift-mixed-cart': {quantity: 1, action: 'cart'},
+    'gift-pending-checkout': {quantity: 1, action: 'redeem'},
+    'gift-existing-checkout': {quantity: 1, action: 'redeem', existingPolo: true}
+  };
   let activeOrderId;
+  let catalogEntry;
 
   const returnDialog = document.getElementById('return-dialog');
   const returnCoupon = document.getElementById('return-coupon');
@@ -67,6 +101,8 @@ Coupon code: ${returnCode.textContent.trim()}`;
   const usedFilter = document.getElementById('return-rewards-used');
   const availableList = document.getElementById('return-available-list');
   const usedList = document.getElementById('return-used-list');
+  const redeemedGifts = document.getElementById('return-redeemed-gifts');
+  const availableRewardCount = availableList.querySelectorAll(':scope > .return-member-reward').length;
 
   function showAvailableRewards(available) {
     availableFilter.setAttribute('aria-pressed', String(available));
@@ -105,17 +141,230 @@ Coupon code: ${returnCode.textContent.trim()}`;
     });
   });
 
+  function showCatalogCategory(selectedTab) {
+    catalogTabs.forEach(tab => {
+      const selected = tab === selectedTab;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    catalogResults.setAttribute('aria-labelledby', selectedTab.id);
+    const category = selectedTab.dataset.category;
+    giftsBanner.hidden = category !== 'all';
+    giftCard.hidden = category !== 'gift';
+    giftStatus.textContent = '';
+    giftCheckoutLink.hidden = category !== 'gift' || thanksgivingGiftRedemptions.length === 0;
+    if (!catalogResults.querySelector('.return-catalog-option')) appendCatalogOptions();
+    catalogResults.querySelectorAll('.return-catalog-option').forEach(card => {
+      card.hidden = category !== 'all' && card.dataset.category !== category;
+    });
+  }
+
+  function appendCatalogOptions() {
+    // Use the coupon and return options from the delivered prototype.
+    const rewards = REWARDS.filter(reward => reward.type !== 'shipping');
+    catalogResults.insertAdjacentHTML('beforeend', rewards.map(reward => {
+      const coupon = reward.type === 'coupon';
+      const title = coupon ? `$${reward.value} off $${reward.min}` : 'Free US returns';
+      const description = coupon
+        ? `Save $${reward.value} on orders of $${reward.min} or more.`
+        : 'Contact customer service to request a return.';
+      return `<article class="return-catalog-card return-catalog-card-body return-catalog-option" data-category="${reward.type}">
+        <h2>${title}</h2>
+        <p>${description}</p>
+        ${coupon ? '<p class="return-catalog-note">Applies after member discounts.</p>' : ''}
+        <details class="return-terms">
+          <summary>Terms &amp; Conditions</summary>
+          <div lang="zh-CN">${rewardUseConditionsHTML(reward)}</div>
+        </details>
+        <div class="return-catalog-cost">
+          <span><strong>${number(reward.cost)}</strong> points</span>
+          <button type="button" class="return-btn" title="Preview only" disabled>Redeem</button>
+        </div>
+      </article>`;
+    }).join(''));
+  }
+
+  function updateGiftBalance(version) {
+    const balance = version === thanksgivingVersion ? giftBalance : startingPoints;
+    memberContent.querySelectorAll('[data-catalog-points]').forEach(label => {
+      label.textContent = balance.toLocaleString('en-US');
+    });
+    giftRedeem.disabled = giftBalance < giftCost;
+    giftRedeem.textContent = giftRedeem.disabled ? 'Insufficient points' : 'Redeem';
+    const giftCount = version === thanksgivingVersion ? thanksgivingGiftRedemptions.length : 0;
+    redeemedGifts.hidden = giftCount === 0;
+    availableFilter.textContent = `Available (${availableRewardCount + giftCount})`;
+  }
+
+  function renderRedeemedGifts() {
+    redeemedGifts.innerHTML = thanksgivingGiftRedemptions.map(({name, color, size, image}) => `
+      <article class="return-member-reward">
+        <div class="return-reward-info">
+          <img class="return-redeemed-gift-image" src="${esc(image)}" alt="">
+          <div><h3>${esc(name)}</h3><p>${esc(color)} / ${esc(size)} · Gift redeemed</p></div>
+        </div>
+      </article>`).join('');
+    updateGiftBalance(selector.value);
+  }
+
+  function buildGift(color, size) {
+    return {
+      name: document.getElementById('return-gift-variants-title').textContent,
+      image: giftVariantDialog.querySelector('img').getAttribute('src'),
+      color,
+      size,
+      colors: Array.from(giftVariantForm.querySelectorAll('input[name="color"]'), input => input.value),
+      sizes: Array.from(giftVariantForm.querySelectorAll('input[name="size"]'), input => input.value)
+    };
+  }
+
+  function redeemGift(gift, action) {
+    if (giftBalance < giftCost) return false;
+    if (action === 'cart' && !addRedeemedGiftToCart(gift)) return false;
+    if (action === 'redeem') thanksgivingGiftRedemptions.push({...gift, id: ++giftRedemptionSequence});
+    giftBalance -= giftCost;
+    renderRedeemedGifts();
+    return true;
+  }
+
+  function openGiftCheckout() {
+    showVersion(thanksgivingVersion, 'checkout');
+    state.checkoutSummaryOpen = true;
+    checkoutOpenPage();
+  }
+
+  document.getElementById('return-gift-thumbnail').addEventListener('click', () => giftPreview.showModal());
+  giftPreview.addEventListener('click', event => {
+    if (event.target === giftPreview) giftPreview.close();
+  });
+  giftRedeem.addEventListener('click', () => {
+    if (giftBalance < giftCost) return;
+    giftVariantForm.reset();
+    giftVariantError.hidden = true;
+    giftVariantDialog.showModal();
+  });
+  document.getElementById('return-gift-variants-close').addEventListener('click', () => giftVariantDialog.close());
+  giftVariantForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const action = event.submitter?.value;
+    if (!giftVariantDialog.open || giftBalance < giftCost || !['redeem', 'cart'].includes(action)) return;
+    const fields = new FormData(giftVariantForm);
+    const color = fields.get('color');
+    const size = fields.get('size');
+    if (!color || !size) return;
+    const gift = buildGift(color, size);
+    if (!redeemGift(gift, action)) {
+      giftVariantError.textContent = 'Your cart is full. Remove an item and try again.';
+      giftVariantError.hidden = false;
+      return;
+    }
+    giftVariantDialog.close();
+    if (action === 'cart') {
+      cartTab.click();
+      toast(`已兑换并加购 ${gift.name}（${color} / ${size}），扣除 ${giftCost} 积分。`);
+    } else {
+      giftStatus.textContent = `Gift saved to My rewards (${color} / ${size}). ${giftCost} points deducted.`;
+      giftCheckoutLink.hidden = false;
+    }
+  });
+  giftCheckoutLink.addEventListener('click', openGiftCheckout);
+
+  const stage = document.getElementById('stage');
+  stage.addEventListener('change', event => {
+    const field = event.target;
+    if (!field.matches('select[data-checkout-gift-option]')) return;
+    const row = field.closest('[data-checkout-gift]');
+    const gift = checkoutGiftOffers().find(item => String(item.id) === row.dataset.checkoutGift);
+    if (!gift) return;
+    const choices = field.name === 'color' ? gift.colors : gift.sizes;
+    if (choices.includes(field.value)) {
+      gift[field.name] = field.value;
+      renderRedeemedGifts();
+    }
+  });
+  stage.addEventListener('click', event => {
+    const button = event.target.closest('[data-checkout-gift-add]');
+    if (!button) return;
+    const id = button.closest('[data-checkout-gift]').dataset.checkoutGift;
+    const gift = checkoutGiftOffers().find(item => String(item.id) === id);
+    if (!gift) return;
+    if (!addRedeemedGiftToCart(gift)) {
+      toast(gift.cartLineId && !cartLineItems().some(line => line.id === gift.cartLineId)
+        ? '对应商品已移除。'
+        : '购物车已满，请先移除一件商品。');
+      return;
+    }
+    if (gift === state.checkoutCartGiftOffer) {
+      state.checkoutCartGiftOffer = null;
+    } else {
+      thanksgivingGiftRedemptions.splice(thanksgivingGiftRedemptions.indexOf(gift), 1);
+    }
+    renderRedeemedGifts();
+    checkoutRefreshBlocks();
+    document.getElementById('checkout-order-summary')?.focus({preventScroll: true});
+    toast(gift.cartLineId && !gift.keepOriginalAtListPrice ? '已应用免费礼品折扣。' : '免费礼品已加入本单。');
+  });
+
+  catalogTabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => showCatalogCategory(tab));
+    tab.addEventListener('keydown', event => {
+      const last = catalogTabs.length - 1;
+      const targetIndex = {
+        ArrowLeft: index === 0 ? last : index - 1,
+        ArrowRight: index === last ? 0 : index + 1,
+        Home: 0,
+        End: last
+      }[event.key];
+      if (targetIndex === undefined) return;
+      event.preventDefault();
+      const target = catalogTabs[targetIndex];
+      showCatalogCategory(target);
+      target.focus();
+    });
+  });
+
+  document.getElementById('return-gifts-banner-link').addEventListener('click', () => {
+    showCatalogCategory(giftsTab);
+    giftsTab.focus();
+  });
+
+  catalogEntries.forEach(entry => entry.addEventListener('click', () => {
+    catalogEntry = entry;
+    showCatalogCategory(catalogTabs[0]);
+    showVersion(selector.value, 'rewards');
+    document.getElementById('return-catalog-title').focus();
+  }));
+
+  document.getElementById('return-catalog-back').addEventListener('click', () => {
+    showVersion(selector.value);
+    catalogEntry?.focus();
+  });
+
   function showVersion(version, surface = 'member') {
-    const showMember = version === '1.1.0' && surface === 'member';
-    const showOrder = version === '1.1.0' && surface === 'order';
-    const showThankYou = version === '1.1.0' && surface === 'thankyou';
+    const modern = isCurrentPrototypeVersion(version);
+    const showCatalog = version === thanksgivingVersion && surface === 'rewards';
+    const showMember = modern && (surface === 'member' || showCatalog);
+    const showOrder = modern && surface === 'order';
+    const showThankYou = modern && surface === 'thankyou';
+    if (!showCatalog) {
+      if (giftPreview.open) giftPreview.close();
+      if (giftVariantDialog.open) giftVariantDialog.close();
+    }
     if (!showMember) {
       if (returnDialog.open) returnDialog.close();
       if (discountDialog.open) discountDialog.close();
     }
+    if (version !== document.body.dataset.projectVersion) {
+      demoScenario.innerHTML = version === thanksgivingVersion ? giftScenarioOptions : previousScenarioOptions;
+    }
     document.body.dataset.projectVersion = version;
     document.body.dataset.currentSurface = surface;
     selector.value = version;
+    current.setAttribute('aria-label', `V${version} 原型`);
+    memberHome.forEach(section => { section.hidden = showCatalog; });
+    rewardCatalog.hidden = !showCatalog;
+    catalogEntries.forEach(entry => { entry.disabled = version !== thanksgivingVersion; });
+    updateGiftBalance(version);
     demoScenario.value = '';
     current.hidden = !(showMember || showOrder || showThankYou);
     delivered.hidden = showMember || showOrder || showThankYou;
@@ -125,24 +374,24 @@ Coupon code: ${returnCode.textContent.trim()}`;
     thankYouTab.setAttribute('aria-pressed', String(showThankYou));
     orderTab.setAttribute('aria-pressed', String(showOrder));
     memberTab.setAttribute('aria-pressed', String(showMember));
-    productTab.setAttribute('aria-pressed', String(version === '1.1.0' && surface === 'product'));
-    cartTab.setAttribute('aria-pressed', String(version === '1.1.0' && surface === 'cart'));
+    productTab.setAttribute('aria-pressed', String(modern && surface === 'product'));
+    cartTab.setAttribute('aria-pressed', String(modern && surface === 'cart'));
   }
 
   memberTab.addEventListener('click', () => {
     closeModal();
-    showVersion('1.1.0');
+    showVersion(selector.value);
     window.scrollTo(0, 0);
   });
   productTab.addEventListener('click', () => {
     closeModal();
-    showVersion('1.1.0', 'product');
+    showVersion(selector.value, 'product');
     productDetailOpen();
     window.scrollTo(0, 0);
   });
   cartTab.addEventListener('click', () => {
     closeModal();
-    showVersion('1.1.0', 'cart');
+    showVersion(selector.value, 'cart');
     role = 'storefront';
     page = 'checkout';
     cartView = 'collection';
@@ -154,7 +403,7 @@ Coupon code: ${returnCode.textContent.trim()}`;
 
   thankYouTab.addEventListener('click', () => {
     closeModal();
-    showVersion('1.1.0', 'thankyou');
+    showVersion(selector.value, 'thankyou');
     window.fiobocRenderThankYou?.();
     window.scrollTo(0, 0);
   });
@@ -275,7 +524,7 @@ Coupon code: ${returnCode.textContent.trim()}`;
     const order = demoOrders.find(entry => entry.id === orderId) ?? confirmed;
     activeOrderId = order.id;
     closeModal();
-    showVersion('1.1.0', 'order');
+    showVersion(selector.value, 'order');
     renderOrderDetail(order);
     window.scrollTo(0, 0);
   }
@@ -286,10 +535,36 @@ Coupon code: ${returnCode.textContent.trim()}`;
     document.getElementById('scenario').value = which;
   }
 
+  function previewGiftScenario({quantity, action, existingPolo}) {
+    closeModal();
+    loadDemoAccount('vip2');
+    state.qty = quantity;
+    giftBalance = startingPoints;
+    thanksgivingGiftRedemptions.length = 0;
+    const gift = buildGift(
+      giftVariantForm.querySelector('input[name="color"]').value,
+      giftVariantForm.querySelector('input[name="size"]').value
+    );
+    if (existingPolo) {
+      const polo = listPricePoloCartLine(gift);
+      state.cartItems = [...cartLineItems(), polo];
+      state.qty += polo.quantity;
+      gift.cartLineId = polo.id;
+      gift.colors = [polo.color];
+      gift.sizes = [polo.size];
+    }
+    redeemGift(gift, action);
+    if (action === 'cart') cartTab.click();
+    else openGiftCheckout();
+  }
+
   demoScenario.addEventListener('change', () => {
     const selected = demoScenario.value;
     if (!selected) return;
-    if (selected === 'member-return') {
+    if (selector.value === thanksgivingVersion) {
+      if (!Object.hasOwn(giftScenarios, selected)) return;
+      previewGiftScenario(giftScenarios[selected]);
+    } else if (selected === 'member-return') {
       memberTab.click();
       document.getElementById('return-rewards-available').click();
       document.getElementById('return-details').click();
@@ -327,5 +602,5 @@ Coupon code: ${returnCode.textContent.trim()}`;
     '#checkout', '#join', '#settings', '#overview-owned-rewards'];
   const hasDemoTarget = legacyLinks.includes(location.hash) ||
     params.has('scenario') || params.get('presentation') === '1';
-  showVersion(hasDemoTarget ? '1.0.0' : '1.1.0');
+  showVersion(hasDemoTarget ? '1.0.0' : thanksgivingVersion);
 })();

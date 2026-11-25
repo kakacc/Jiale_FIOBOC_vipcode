@@ -6,12 +6,13 @@
 <link rel="stylesheet" href="./assets/styles.css">
 <link rel="stylesheet" href="./assets/thank-you-v110.css">
 </head>
-<body data-project-version="1.1.0">
+<body data-project-version="1.2.0">
 <header class="reviewbar">
   <div class="review-title">
     <label for="project-version"><strong>Fioboc 会员与积分</strong></label>
     <select id="project-version" aria-label="项目版本">
-      <option value="1.1.0" selected>V1.1.0 （当前版本）</option>
+      <option value="1.2.0" selected>V1.2.0（感恩节活动需求）</option>
+      <option value="1.1.0">V1.1.0</option>
       <option value="1.0.0">V1.0.0 （2026-11-04已交付）</option>
     </select>
   </div>
@@ -20,32 +21,13 @@
       演示场景
       <select id="current-demo-scenario">
         <option value="">选择演示场景</option>
-        <optgroup label="Member Center">
-          <option value="member-return">Free US returns · 使用退货券</option>
-        </optgroup>
-        <optgroup label="商品详情页">
-          <option value="product-vip2">VIP2 已登录 · 会员基础折扣</option>
-          <option value="product-guest">未登录 · 立即加入会员</option>
-        </optgroup>
-        <optgroup label="官网购物车">
-          <option value="cart-rules">购物车 · 查看积分制度</option>
-        </optgroup>
-        <optgroup label="订单详情页">
-          <option value="DEMO-26093">订单积分 · 待入账</option>
-          <option value="DEMO-26095">订单积分 · 已入账</option>
-          <option value="DEMO-26094">已取消订单 · 隐藏积分</option>
-          <option value="DEMO-26096">一件已入账 · 一件待入账</option>
-          <option value="DEMO-26097">一件已取消 · 一件待入账</option>
-        </optgroup>
-        <optgroup label="结账感谢页">
-          <option value="thankyou-vip2">VIP2 · 支付成功</option>
-          <option value="thankyou-member">Member · 支付成功</option>
-          <option value="thankyou-vip1">VIP1 · 支付成功</option>
-          <option value="thankyou-vip3">VIP3 · 最高等级</option>
-        </optgroup>
+        <option value="gift-only-cart">兑换并加购，并仅有免费商品</option>
+        <option value="gift-mixed-cart">兑换并加购，购物车还有其他商品</option>
+        <option value="gift-pending-checkout">兑换后未加购</option>
+        <option value="gift-existing-checkout">结账多件商品（包含可免费商品）</option>
       </select>
     </label>
-    <nav class="current-prototype-nav" aria-label="V1.1.0 原型页面">
+    <nav class="current-prototype-nav" aria-label="原型页面">
       <button type="button" id="current-member-tab" aria-pressed="true">Member Center</button>
       <button type="button" id="current-product-tab" aria-pressed="false">商品详情页</button>
       <button type="button" id="current-cart-tab" aria-pressed="false">官网购物车</button>
@@ -55,7 +37,33 @@
     <button type="button" id="review-changes-toggle" class="review-changes-toggle" aria-pressed="false" aria-controls="review-changes-summary">查看需调整的区域</button>
   </div>
 </header>
-<main id="current-prototype" aria-label="V1.1.0 原型">
+<template id="v110-demo-scenarios">
+  <option value="">选择演示场景</option>
+  <optgroup label="Member Center">
+    <option value="member-return">Free US returns · 使用退货券</option>
+  </optgroup>
+  <optgroup label="商品详情页">
+    <option value="product-vip2">VIP2 已登录 · 会员基础折扣</option>
+    <option value="product-guest">未登录 · 立即加入会员</option>
+  </optgroup>
+  <optgroup label="官网购物车">
+    <option value="cart-rules">购物车 · 查看积分制度</option>
+  </optgroup>
+  <optgroup label="订单详情页">
+    <option value="DEMO-26093">订单积分 · 待入账</option>
+    <option value="DEMO-26095">订单积分 · 已入账</option>
+    <option value="DEMO-26094">已取消订单 · 隐藏积分</option>
+    <option value="DEMO-26096">一件已入账 · 一件待入账</option>
+    <option value="DEMO-26097">一件已取消 · 一件待入账</option>
+  </optgroup>
+  <optgroup label="结账感谢页">
+    <option value="thankyou-vip2">VIP2 · 支付成功</option>
+    <option value="thankyou-member">Member · 支付成功</option>
+    <option value="thankyou-vip1">VIP1 · 支付成功</option>
+    <option value="thankyou-vip3">VIP3 · 最高等级</option>
+  </optgroup>
+</template>
+<main id="current-prototype" aria-label="原型">
   <div class="return-member" id="current-member-content" lang="en">
     <header class="return-member-header">
       <div class="return-member-shell return-member-header-row">
@@ -83,13 +91,13 @@
               </div>
               <button type="button" class="return-member-link" disabled>View history</button>
             </div>
-            <p class="return-points-total"><strong>4,500</strong> <span>available</span></p>
+            <p class="return-points-total"><strong data-catalog-points>4,500</strong> <span>available</span></p>
             <div class="return-pending-points">
               <span>Pending</span>
               <strong>0 points</strong>
             </div>
             <div class="return-points-progress">
-              <div><span>First reward</span><strong>4,500 / 500</strong></div>
+              <div><span>First reward</span><strong><span data-catalog-points>4,500</span> / 500</strong></div>
               <progress aria-label="First reward progress" value="500" max="500"></progress>
             </div>
             <div class="return-points-actions">
@@ -104,7 +112,7 @@
             <p class="return-featured-description">Redeem 500 points for $5 off $100 on orders over $100.00.</p>
             <div class="return-featured-actions">
               <button type="button" class="return-btn" disabled>Shop Now</button>
-              <button type="button" class="return-btn return-btn-secondary" disabled>Browse All Rewards</button>
+              <button type="button" class="return-btn return-btn-secondary" data-reward-catalog disabled>Browse All Rewards</button>
             </div>
           </section>
         </div>
@@ -115,7 +123,7 @@
               <h2 id="return-rewards-title">My rewards</h2>
               <p>Limit one coupon code per order</p>
             </div>
-            <button type="button" class="return-btn" disabled>Browse All Rewards</button>
+            <button type="button" class="return-btn" data-reward-catalog disabled>Browse All Rewards</button>
           </div>
           <div class="return-reward-filters" role="group" aria-label="Reward status">
             <button type="button" id="return-rewards-available" aria-controls="return-available-list" aria-pressed="true">Available (2)</button>
@@ -149,8 +157,59 @@
                 <button type="button" class="return-btn" id="return-discount-details" aria-haspopup="dialog">View coupon details</button>
               </div>
             </article>
+            <div class="return-redeemed-gifts" id="return-redeemed-gifts" hidden></div>
           </div>
           <p id="return-used-list" class="return-rewards-empty" hidden>No used or expired rewards.</p>
+        </section>
+        <section id="return-reward-catalog" class="return-member-panel return-catalog" aria-labelledby="return-catalog-title" hidden>
+          <nav class="return-catalog-crumb" aria-label="Breadcrumb">
+            <button type="button" class="return-member-link" id="return-catalog-back">Member Center</button>
+            <span aria-hidden="true">/</span>
+            <span aria-current="page">Redeem Rewards</span>
+          </nav>
+          <h1 id="return-catalog-title" tabindex="-1">Redeem Rewards</h1>
+          <div class="return-catalog-balance">
+            <strong>Available balance: <span data-catalog-points>4,500</span> points</strong>
+            <span>Pending: 0 points</span>
+          </div>
+          <div class="return-reward-filters" id="return-catalog-tabs" role="tablist" aria-label="Reward categories">
+            <button type="button" id="return-catalog-all" role="tab" aria-controls="return-catalog-results" aria-selected="true" data-category="all">All rewards</button>
+            <button type="button" id="return-catalog-gifts" role="tab" aria-controls="return-catalog-results" aria-selected="false" tabindex="-1" data-category="gift">Free Gifts</button>
+            <button type="button" id="return-catalog-coupons" role="tab" aria-controls="return-catalog-results" aria-selected="false" tabindex="-1" data-category="coupon">Coupons</button>
+            <button type="button" id="return-catalog-services" role="tab" aria-controls="return-catalog-results" aria-selected="false" tabindex="-1" data-category="return">Service benefits</button>
+          </div>
+          <div class="return-gift-feedback">
+            <p class="return-gift-status" id="return-gift-status" role="status"></p>
+            <button class="return-member-link" type="button" id="return-gift-view-checkout" hidden>View checkout</button>
+          </div>
+          <div class="return-catalog-grid" id="return-catalog-results" role="tabpanel" aria-labelledby="return-catalog-all" tabindex="0">
+            <section class="return-gifts-banner" id="return-gifts-banner" aria-labelledby="return-gifts-banner-title">
+              <div>
+                <h2 id="return-gifts-banner-title">Free Gifts</h2>
+                <p>Redeem your points for a free gift.</p>
+              </div>
+              <button type="button" class="return-btn" id="return-gifts-banner-link">Explore gifts</button>
+            </section>
+            <article class="return-catalog-card return-gift-card" data-category="gift" hidden>
+              <button type="button" class="return-gift-thumbnail" id="return-gift-thumbnail" aria-label="View larger image of Weekend Performance Essential Polo Tee" aria-haspopup="dialog">
+                <img src="./assets/images/polo-white.webp" width="720" height="964" alt="White Weekend Performance Essential Polo Tee">
+              </button>
+              <div class="return-catalog-card-body">
+                <h2>Weekend Performance Essential Polo Tee</h2>
+                <details class="return-terms">
+                  <summary>Terms &amp; Conditions</summary>
+                  <ol>
+                    <li>Use 100 available points to redeem this gift.</li>
+                    <li>Points are deducted when you confirm redemption.</li>
+                  </ol>
+                </details>
+                <div class="return-catalog-cost">
+                  <span><strong>100</strong> points</span>
+                  <button type="button" class="return-btn" id="return-gift-redeem" aria-haspopup="dialog">Redeem</button>
+                </div>
+              </div>
+            </article>
+          </div>
         </section>
       </div>
     </div>
@@ -158,6 +217,54 @@
 
   <section class="order-detail-page" id="current-order-detail" lang="en" aria-label="Order details" hidden></section>
   <section id="current-thank-you" lang="en" aria-label="Thank you and order rewards" hidden></section>
+
+  <dialog class="return-dialog return-gift-preview" id="return-gift-preview" aria-labelledby="return-gift-preview-title" lang="en">
+    <section class="return-coupon">
+      <header class="return-coupon-heading">
+        <h2 id="return-gift-preview-title">Weekend Performance Essential Polo Tee</h2>
+        <form method="dialog">
+          <button class="return-coupon-close" aria-label="Close product image" autofocus>×</button>
+        </form>
+      </header>
+      <img src="./assets/images/polo-white.webp" width="720" height="964" alt="White Weekend Performance Essential Polo Tee">
+    </section>
+  </dialog>
+
+  <dialog class="return-dialog return-gift-variants" id="return-gift-variants" aria-labelledby="return-gift-variants-title" lang="en">
+    <button type="button" class="return-coupon-close return-gift-variants-close" id="return-gift-variants-close" aria-label="Close gift options" autofocus>×</button>
+    <div class="return-gift-variants-photo">
+      <img src="./assets/images/polo-white.webp" width="720" height="964" alt="White Weekend Performance Essential Polo Tee">
+    </div>
+    <form class="return-gift-variants-form" id="return-gift-variants-form">
+      <h2 id="return-gift-variants-title">Weekend Performance Essential Polo Tee</h2>
+      <p class="return-gift-variants-points"><strong>100</strong> points</p>
+      <fieldset>
+        <legend>Color</legend>
+        <div class="return-gift-choices">
+          <label class="return-gift-choice">
+            <input type="radio" name="color" value="White" checked required>
+            <span><i class="return-gift-color-swatch" aria-hidden="true"></i>White</span>
+          </label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Size</legend>
+        <div class="return-gift-choices">
+          <label class="return-gift-choice"><input type="radio" name="size" value="S" required><span>S</span></label>
+          <label class="return-gift-choice"><input type="radio" name="size" value="M"><span>M</span></label>
+          <label class="return-gift-choice"><input type="radio" name="size" value="L"><span>L</span></label>
+          <label class="return-gift-choice"><input type="radio" name="size" value="XL"><span>XL</span></label>
+          <label class="return-gift-choice"><input type="radio" name="size" value="2XL"><span>2XL</span></label>
+          <label class="return-gift-choice"><input type="radio" name="size" value="3XL"><span>3XL</span></label>
+        </div>
+      </fieldset>
+      <p class="return-gift-variants-error" id="return-gift-variants-error" role="alert" hidden></p>
+      <div class="return-gift-variants-actions" lang="zh-CN">
+        <button type="submit" name="action" value="redeem" class="return-btn return-btn-secondary">仅兑换</button>
+        <button type="submit" name="action" value="cart" class="return-btn">兑换并加购</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog class="return-dialog" id="return-discount-dialog" aria-labelledby="return-discount-title">
     <section class="return-coupon" lang="en">
