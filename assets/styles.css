@@ -1133,9 +1133,11 @@ body[data-project-version="1.0.0"] .product-current-price { display: none !impor
   border-radius: 7px;
 }
 .return-gift-choice input:checked + span { border-color: #1d1e1f; background: #1d1e1f; color: #fff; }
+.return-gift-choice input:disabled + span { opacity: .45; }
 .return-gift-choice input:focus-visible + span { outline: 2px solid #171717; outline-offset: 2px; }
 .return-gift-color-swatch { width: 18px; height: 18px; border: 1px solid #b8b8b8; border-radius: 50%; background: #fff; }
 .return-gift-variants-actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; margin-top: 22px; }
+.return-gift-variants-actions [value="owned-cart"] { grid-column: 1 / -1; }
 .return-gift-variants-error { margin: 12px 0 0; color: #a12727; }
 .return-redeemed-gifts { border-top: 1px solid var(--member-line); }
 .return-redeemed-gift-image { width: 47px; height: 58px; border-radius: 6px; object-fit: cover; }

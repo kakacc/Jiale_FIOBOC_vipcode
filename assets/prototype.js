@@ -27,6 +27,9 @@ const thanksgivingGiftRedemptions = [];
   const giftVariantDialog = document.getElementById('return-gift-variants');
   const giftVariantForm = document.getElementById('return-gift-variants-form');
   const giftVariantError = document.getElementById('return-gift-variants-error');
+  const giftDetailsDialog = document.getElementById('return-gift-details-dialog');
+  const giftDetailsAdd = document.getElementById('return-gift-details-add');
+  let activeRedeemedGift = null;
   const giftRedeem = document.getElementById('return-gift-redeem');
   const giftStatus = document.getElementById('return-gift-status');
   const giftCheckoutLink = document.getElementById('return-gift-view-checkout');
@@ -197,11 +200,15 @@ Coupon code: ${returnCode.textContent.trim()}`;
   }
 
   function renderRedeemedGifts() {
-    redeemedGifts.innerHTML = thanksgivingGiftRedemptions.map(({name, color, size, image}) => `
+    redeemedGifts.innerHTML = thanksgivingGiftRedemptions.map(({id, name, image}) => `
       <article class="return-member-reward">
         <div class="return-reward-info">
           <img class="return-redeemed-gift-image" src="${esc(image)}" alt="">
-          <div><h3>${esc(name)}</h3><p>${esc(color)} / ${esc(size)} · Gift redeemed</p></div>
+          <div><h3>Free Gifts</h3><p>${esc(name)}</p></div>
+        </div>
+        <div class="return-reward-actions">
+          <button type="button" class="return-btn return-btn-secondary" data-gift-reward-action="cart" data-gift-id="${id}" aria-haspopup="dialog">Add To Cart</button>
+          <button type="button" class="return-btn" data-gift-reward-action="details" data-gift-id="${id}" aria-haspopup="dialog">View coupon details</button>
         </div>
       </article>`).join('');
     updateGiftBalance(selector.value);
@@ -233,25 +240,76 @@ Coupon code: ${returnCode.textContent.trim()}`;
     checkoutOpenPage();
   }
 
+  function openGiftVariants(gift = null) {
+    activeRedeemedGift = gift;
+    giftVariantForm.reset();
+    giftVariantError.hidden = true;
+    for (const button of giftVariantForm.querySelectorAll('button[name="action"]')) {
+      button.hidden = (button.value === 'owned-cart') !== Boolean(gift);
+      button.disabled = button.hidden;
+    }
+    for (const field of giftVariantForm.querySelectorAll('input[type="radio"]')) {
+      const allowed = field.name === 'color' ? gift?.colors : gift?.sizes;
+      field.disabled = allowed ? !allowed.includes(field.value) : false;
+      if (gift) field.checked = field.value === gift[field.name];
+    }
+    giftVariantDialog.showModal();
+  }
+
+  redeemedGifts.addEventListener('click', event => {
+    const button = event.target.closest('[data-gift-reward-action]');
+    if (!button) return;
+    const gift = thanksgivingGiftRedemptions.find(item => item.id === Number(button.dataset.giftId));
+    if (!gift) return;
+    if (button.dataset.giftRewardAction === 'cart') {
+      openGiftVariants(gift);
+    } else {
+      document.getElementById('return-gift-coupon-code').textContent = `FG-${String(gift.id).padStart(4, '0')}`;
+      giftDetailsAdd.dataset.giftId = String(gift.id);
+      giftDetailsDialog.querySelector('details').open = false;
+      giftDetailsDialog.showModal();
+    }
+  });
+  giftDetailsAdd.addEventListener('click', () => {
+    const gift = thanksgivingGiftRedemptions.find(item => item.id === Number(giftDetailsAdd.dataset.giftId));
+    giftDetailsDialog.close();
+    if (gift) openGiftVariants(gift);
+  });
+
   document.getElementById('return-gift-thumbnail').addEventListener('click', () => giftPreview.showModal());
   giftPreview.addEventListener('click', event => {
     if (event.target === giftPreview) giftPreview.close();
   });
   giftRedeem.addEventListener('click', () => {
     if (giftBalance < giftCost) return;
-    giftVariantForm.reset();
-    giftVariantError.hidden = true;
-    giftVariantDialog.showModal();
+    openGiftVariants();
   });
   document.getElementById('return-gift-variants-close').addEventListener('click', () => giftVariantDialog.close());
   giftVariantForm.addEventListener('submit', event => {
     event.preventDefault();
     const action = event.submitter?.value;
-    if (!giftVariantDialog.open || giftBalance < giftCost || !['redeem', 'cart'].includes(action)) return;
+    if (!giftVariantDialog.open || !['redeem', 'cart', 'owned-cart'].includes(action)) return;
+    if ((action === 'owned-cart') !== Boolean(activeRedeemedGift)) return;
     const fields = new FormData(giftVariantForm);
     const color = fields.get('color');
     const size = fields.get('size');
     if (!color || !size) return;
+    if (activeRedeemedGift) {
+      const index = thanksgivingGiftRedemptions.indexOf(activeRedeemedGift);
+      if (index < 0 || !activeRedeemedGift.colors.includes(color) || !activeRedeemedGift.sizes.includes(size)) return;
+      if (!addRedeemedGiftToCart({...activeRedeemedGift, color, size})) {
+        giftVariantError.textContent = 'This gift could not be added. Check your cart and try again.';
+        giftVariantError.hidden = false;
+        return;
+      }
+      thanksgivingGiftRedemptions.splice(index, 1);
+      renderRedeemedGifts();
+      giftVariantDialog.close();
+      cartTab.click();
+      toast('免费礼品已加入购物车。');
+      return;
+    }
+    if (giftBalance < giftCost) return;
     const gift = buildGift(color, size);
     if (!redeemGift(gift, action)) {
       giftVariantError.textContent = 'Your cart is full. Remove an item and try again.';
@@ -354,6 +412,7 @@ Coupon code: ${returnCode.textContent.trim()}`;
       if (returnDialog.open) returnDialog.close();
       if (discountDialog.open) discountDialog.close();
     }
+    if (giftDetailsDialog.open) giftDetailsDialog.close();
     if (version !== document.body.dataset.projectVersion) {
       demoScenario.innerHTML = version === thanksgivingVersion ? giftScenarioOptions : previousScenarioOptions;
     }

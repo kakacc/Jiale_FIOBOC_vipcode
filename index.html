@@ -262,8 +262,35 @@
       <div class="return-gift-variants-actions" lang="zh-CN">
         <button type="submit" name="action" value="redeem" class="return-btn return-btn-secondary">仅兑换</button>
         <button type="submit" name="action" value="cart" class="return-btn">兑换并加购</button>
+        <button type="submit" name="action" value="owned-cart" class="return-btn" lang="en" hidden disabled>Add To Cart</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog class="return-dialog" id="return-gift-details-dialog" aria-labelledby="return-gift-details-title" lang="en">
+    <section class="return-coupon">
+      <header class="return-coupon-heading">
+        <h2 id="return-gift-details-title">Free Gift</h2>
+        <form method="dialog">
+          <button type="submit" class="return-coupon-close" aria-label="Close coupon details" autofocus>
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m4 4 12 12M16 4 4 16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          </button>
+        </form>
+      </header>
+      <p>This coupon is valid through Dec 20, 2026.</p>
+      <div class="return-code">
+        <span>Coupon code</span>
+        <strong id="return-gift-coupon-code"></strong>
+        <p>Enter this coupon code at checkout to redeem your gift.</p>
+      </div>
+      <details class="return-terms">
+        <summary>Terms &amp; Conditions</summary>
+        <p>To use the free gift discount, check out with at least one other item.</p>
+      </details>
+      <footer class="return-coupon-actions">
+        <button type="button" class="return-btn" id="return-gift-details-add">Add To Cart</button>
+      </footer>
+    </section>
   </dialog>
 
   <dialog class="return-dialog" id="return-discount-dialog" aria-labelledby="return-discount-title">
