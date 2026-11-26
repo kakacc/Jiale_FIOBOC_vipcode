@@ -1036,12 +1036,12 @@ body[data-project-version="1.0.0"] .product-current-price { display: none !impor
   max-height: min(280px, 34dvh);
   margin-inline: auto;
 }
-.return-gift-card .return-terms ol {
+.return-gift-terms-list {
   margin: 0;
   padding: 0 10px 10px 27px;
-  color: var(--member-muted);
+  color: var(--member-muted, #666);
 }
-.return-gift-card .return-terms li + li { margin-top: 6px; }
+.return-gift-terms-list li + li { margin-top: 6px; }
 
 .return-dialog {
   width: min(460px, calc(100% - 28px));
