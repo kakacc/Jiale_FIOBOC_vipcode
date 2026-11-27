@@ -184,6 +184,8 @@
   .v110-highest-tier-message p { font-size: 13px; }
 }
 .v110-points-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #e6dfd8; margin-top: 21px; padding: 19px 0; }
+.v110-points-row.has-credit-note { padding-bottom: 7px; }
+#current-thank-you .v110-points-credit-note { margin: 0 0 18px; color: #666; font-size: 12px; line-height: 1.5; }
 .v110-points-value { font-size: 25px; font-weight: 700; letter-spacing: -.7px; line-height: 1.25; white-space: nowrap; }
 .v110-points-description { display: inline-flex; align-items: center; gap: 6px; color: #626262; font-size: 13px; white-space: nowrap; }
 .v110-points-help { position: relative; display: inline-flex; flex-shrink: 0; vertical-align: middle; }
