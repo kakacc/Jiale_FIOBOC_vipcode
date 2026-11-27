@@ -79,7 +79,7 @@
       ${showPointsCreditNote?'<p class="v110-points-credit-note">Eligible spend and points are credited 30 days after shipment.</p>':''}
       ${m.guest?`<div class="v110-reward-welcome"><strong>You haven’t joined Fioboc Rewards yet.</strong><p>Your order earns at the Member rate of 1.0 point per $1. A purchase does not automatically enroll you.</p><p>${demo.rewardIssued?'Your one-time welcome reward has already been issued.':'Join and verify your email for 100 welcome points, if eligible. This reward is separate from your purchase points.'}</p></div>`:''}
       ${m.refunded?'<p class="v110-reward-refund">A €5.00 merchandise refund reduced this order’s pending reward from 23 to 17 points. The remaining $14.25 in qualifying spend will count only after posting.</p>':''}
-      <button type="button" class="v110-reward-action ${m.guest?'is-outline':''}" data-v110-action="${m.guest?'join':'rewards'}">${m.guest?'Join Fioboc Rewards':'Explore My Rewards'} ${icons.arrow}</button>
+      <button type="button" class="v110-reward-action ${m.guest?'is-outline':''}" data-v110-action="${m.guest?'join':'rewards'}">${m.guest?'Join Fioboc Rewards':'Explore My Rewards'} ${showPointsCreditNote?'':icons.arrow}</button>
     </section>`;
   }
 
